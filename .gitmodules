@@ -1,0 +1,3 @@
+[submodule "PoissonImageEditing/3rdparty/eigen"]
+	path = PoissonImageEditing/3rdparty/eigen
+	url = https://gitlab.com/libeigen/eigen.git
