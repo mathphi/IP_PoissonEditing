@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include "sourcegraphicsscene.h"
+
 #include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
 #include <QFileDialog>
@@ -18,11 +20,14 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    m_scene_source = new QGraphicsScene(this);
+    m_scene_source = new SourceGraphicsScene(this);
     m_scene_target = new QGraphicsScene(this);
 
     ui->graphicsViewSource->setScene(m_scene_source);
     ui->graphicsViewTarget->setScene(m_scene_target);
+
+    ui->graphicsViewSource->setMouseTracking(true);
+    ui->graphicsViewTarget->setMouseTracking(true);
 
     m_pix_item_source = new QGraphicsPixmapItem;
     m_pix_item_target = new QGraphicsPixmapItem;
