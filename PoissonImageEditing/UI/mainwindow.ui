@@ -60,6 +60,7 @@
     <property name="title">
      <string>Edit</string>
     </property>
+    <addaction name="actionTemp_Test"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -110,6 +111,11 @@
   <action name="actionQuit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionTemp_Test">
+   <property name="text">
+    <string>Temp Test</string>
    </property>
   </action>
  </widget>

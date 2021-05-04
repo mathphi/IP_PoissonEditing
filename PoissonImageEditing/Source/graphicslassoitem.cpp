@@ -108,6 +108,10 @@ void GraphicsLassoItem::terminateLasso(QRectF boundary_rect) {
  * This function returns true if the lasso is a valid closed path
  */
 bool GraphicsLassoItem::isLassoValid() const {
+    // Check if there is a lasso
+    if (m_path.elementCount() <= 2)
+        return false;
+
     // Check if first point == last point
     return m_path.pointAtPercent(0) == m_path.pointAtPercent(1);
 }

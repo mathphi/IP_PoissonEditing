@@ -30,6 +30,8 @@ private slots:
     void updateSourceScene();
     void updateTargetScene();
 
+    void tempTestAction();
+
 private:
     Ui::MainWindow *ui;
 

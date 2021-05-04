@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 
 #include "sourcegraphicsscene.h"
+#include "computationhandler.h"
 
 #include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
@@ -62,6 +63,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->actionOpen_source_image, SIGNAL(triggered(bool)), this, SLOT(openSourceImage()));
     connect(ui->actionOpen_target_image, SIGNAL(triggered(bool)), this, SLOT(openTargetImage()));
+
+
+    // Temp test action
+    connect(ui->actionTemp_Test, SIGNAL(triggered(bool)), this, SLOT(tempTestAction()));
 }
 
 MainWindow::~MainWindow()
@@ -81,6 +86,11 @@ void MainWindow::resizeEvent(QResizeEvent *e) {
 }
 
 
+/**
+ * @brief MainWindow::openSourceImage
+ *
+ * This slot is called when the "Open source image" action is triggered
+ */
 void MainWindow::openSourceImage() {
     // Open existing image file
     QString filename = QFileDialog::getOpenFileName(
@@ -105,6 +115,11 @@ void MainWindow::openSourceImage() {
     m_scene_source->enableLasso(true);
 }
 
+/**
+ * @brief MainWindow::openTargetImage
+ *
+ * This slot is called when the "Open target image" action is triggered
+ */
 void MainWindow::openTargetImage() {
     // Open existing image file
     QString filename = QFileDialog::getOpenFileName(
@@ -122,6 +137,11 @@ void MainWindow::openTargetImage() {
     updateTargetScene();
 }
 
+/**
+ * @brief MainWindow::updateSourceScene
+ *
+ * This slot updates the pixmap on the source graphics scene
+ */
 void MainWindow::updateSourceScene() {
     // Update the picture of the pixmap item
     m_pix_item_source->setPixmap(QPixmap::fromImage(m_source_image));
@@ -133,6 +153,11 @@ void MainWindow::updateSourceScene() {
     ui->graphicsViewSource->fitInView(m_scene_source->sceneRect(), Qt::KeepAspectRatio);
 }
 
+/**
+ * @brief MainWindow::updateTargetScene
+ *
+ * This slot updates the pixmap on the target graphics scene
+ */
 void MainWindow::updateTargetScene() {
     // Update the picture of the pixmap item
     m_pix_item_target->setPixmap(QPixmap::fromImage(m_target_image));
@@ -142,4 +167,22 @@ void MainWindow::updateTargetScene() {
 
     // Fit graphics view to the pixmap item
     ui->graphicsViewTarget->fitInView(m_scene_target->sceneRect(), Qt::KeepAspectRatio);
+}
+
+/**
+ * @brief MainWindow::tempTestAction
+ *
+ * This function is a temporary function used for development
+ */
+void MainWindow::tempTestAction() {
+    if (!m_scene_source->isSelectionValid())
+        return;
+
+    QImage img_part = m_source_image.copy(m_scene_source->getSelectionPath().boundingRect().toRect());
+
+    std::array<MatrixXd,3> img_matrices = ComputationHandler::imageToMatrices(img_part);
+
+    qDebug() << "red:" << img_matrices[0](0,0)
+             << "\tgreen:" << img_matrices[1](0,0)
+             << "\tblue:" << img_matrices[2](0,0);
 }

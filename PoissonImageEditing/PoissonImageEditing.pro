@@ -9,12 +9,14 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    Source/computationhandler.cpp \
     Source/graphicslassoitem.cpp \
     Source/main.cpp \
     Source/mainwindow.cpp \
     Source/sourcegraphicsscene.cpp
 
 HEADERS += \
+    Source/computationhandler.h \
     Source/graphicslassoitem.h \
     Source/mainwindow.h \
     Source/sourcegraphicsscene.h

@@ -22,6 +22,10 @@ public:
     SourceGraphicsScene(QObject *parent = nullptr);
     ~SourceGraphicsScene();
 
+    QPainterPath getSelectionPath() const;
+    bool isSelectionValid() const;
+
+public slots:
     void enableLasso(bool en);
     void removeLasso();
 

@@ -22,10 +22,37 @@ SourceGraphicsScene::~SourceGraphicsScene() {
 }
 
 /**
+ * @brief SourceGraphicsScene::getSelectionPath
+ * @return
+ *
+ * This function returns a copy of the current selection path.
+ * If there is no valid selection path, it returns an empty path.
+ */
+QPainterPath SourceGraphicsScene::getSelectionPath() const {
+    if (!m_current_lasso->isLassoValid())
+        return QPainterPath();
+
+    return m_current_lasso->path();
+}
+
+/**
+ * @brief SourceGraphicsScene::isSelectionValid
+ * @return
+ *
+ * This function returns true if the lasso has been drawn and is valid
+ */
+bool SourceGraphicsScene::isSelectionValid() const {
+    if (!m_current_lasso)
+        return false;
+
+    return m_current_lasso->isLassoValid();
+}
+
+/**
  * @brief SourceGraphicsScene::enableLasso
  * @param en
  *
- * This function enables or disable the lasso (any existing lasso is removed if disable)
+ * This slot enables or disable the lasso (any existing lasso is removed if disable)
  */
 void SourceGraphicsScene::enableLasso(bool en) {
     // If it was disabled and now enabled -> Lasso state to NoLasso
@@ -45,7 +72,7 @@ void SourceGraphicsScene::enableLasso(bool en) {
 /**
  * @brief SourceGraphicsScene::removeLasso
  *
- * This function removes the lasso (if one)
+ * This slot removes the lasso (if one)
  */
 void SourceGraphicsScene::removeLasso() {
     if (!m_current_lasso)
