@@ -13,7 +13,7 @@ public:
 
     QPainterPath path() const;
     void addPathPoint(const QPointF point);
-    void terminateLasso();
+    void terminateLasso(QRectF boundary_rect = QRectF());
 
     bool isLassoValid() const;
 

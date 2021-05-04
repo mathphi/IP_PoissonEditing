@@ -6,7 +6,8 @@
 
 namespace SourceLassoState {
 enum SourceLassoState {
-    None,
+    Disabled,
+    NoLasso,
     Drawing,
     Drawn
 };
@@ -21,6 +22,9 @@ public:
     SourceGraphicsScene(QObject *parent = nullptr);
     ~SourceGraphicsScene();
 
+    void enableLasso(bool en);
+    void removeLasso();
+
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
@@ -32,7 +36,6 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
-    void removeLasso();
 
     GraphicsLassoItem *m_current_lasso;
     SourceLassoState::SourceLassoState m_lasso_state;

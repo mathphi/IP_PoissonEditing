@@ -4,9 +4,7 @@
 #include <QObject>
 #include <QPainter>
 
-#include <QDebug>
-
-#define LASSO_WIDTH     1.5
+#define LASSO_WIDTH     2.0
 #define DASH_SIZE       6.0
 #define ANIM_INTERVAL   250   // ms
 
@@ -79,11 +77,27 @@ void GraphicsLassoItem::addPathPoint(const QPointF point) {
  *
  * This function terminates the lasso (closes the lasso and simplifies its geometry)
  */
-void GraphicsLassoItem::terminateLasso() {
+void GraphicsLassoItem::terminateLasso(QRectF boundary_rect) {
+    // Prepare the graphics for geometry change
     prepareGeometryChange();
+
+    // Simplify the resulting path
     m_path = m_path.simplified();
+
+    // If a boundary rect has been specified -> apply it
+    if (!boundary_rect.isNull()) {
+        // Create a QPainterPath with the shape of the boundary rect
+        QPainterPath boundary_path;
+        boundary_path.addRect(boundary_rect);
+
+        // Intersect the boundary rect with the current lasso path
+        m_path = m_path.intersected(boundary_path);
+    }
+
+    // Update graphics
     update();
 
+    // Mark lasso as terminated
     m_lasso_terminated = true;
 }
 
