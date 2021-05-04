@@ -12,9 +12,10 @@ public:
     ~GraphicsLassoItem();
 
     QPainterPath path() const;
-    void setPath(const QPainterPath path);
     void addPathPoint(const QPointF point);
     void terminateLasso();
+
+    bool isLassoValid() const;
 
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
@@ -28,6 +29,8 @@ private:
 
     QTimer *m_anim_timer;
     qreal m_anim_dash_offset;
+
+    bool m_lasso_terminated;
 };
 
 #endif // GRAPHICSLASSOITEM_H

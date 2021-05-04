@@ -6,14 +6,18 @@
 
 #include <QDebug>
 
-#define LASSO_WIDTH     2
-#define DASH_SIZE       10
+#define LASSO_WIDTH     1.5
+#define DASH_SIZE       6.0
 #define ANIM_INTERVAL   250   // ms
 
 GraphicsLassoItem::GraphicsLassoItem(const QPointF start_point) : QGraphicsObject()
 {
+    // Lasso is initially not terminated
+    m_lasso_terminated = false;
+
+    // Initialize painter path
     m_path = QPainterPath(start_point);
-    m_path.setFillRule(Qt::WindingFill);
+    m_path.setFillRule(Qt::WindingFill);    // To keep only path outline when simplifying
 
     // Initialize animation timer
     m_anim_timer = new QTimer;
@@ -31,14 +35,19 @@ GraphicsLassoItem::~GraphicsLassoItem() {
     delete m_anim_timer;
 }
 
+/**
+ * @brief GraphicsLassoItem::animateLasso
+ *
+ * This slot is called by the timer to animate the dashes on the lasso
+ */
 void GraphicsLassoItem::animateLasso() {
-    // Increase dash offset with a period of 2*DASH_SIZE
-    if (m_anim_dash_offset > 2.0*DASH_SIZE) {
-        m_anim_dash_offset = 0.0;
-    }
-
     // Increase by an eighth of a period
     m_anim_dash_offset += DASH_SIZE / 4.0;
+
+    // Increase dash offset with a period of 2*DASH_SIZE
+    if (m_anim_dash_offset >= 2.0*DASH_SIZE) {
+        m_anim_dash_offset = 0.0;
+    }
 
     update();
 }
@@ -51,18 +60,6 @@ void GraphicsLassoItem::animateLasso() {
  */
 QPainterPath GraphicsLassoItem::path() const {
     return m_path;
-}
-
-/**
- * @brief GraphicsLassoItem::setPath
- * @param path
- *
- * This function sets the current path of the lasso and update the graphics
- */
-void GraphicsLassoItem::setPath(const QPainterPath path) {
-    prepareGeometryChange();
-    m_path = path;
-    update();
 }
 
 /**
@@ -86,6 +83,19 @@ void GraphicsLassoItem::terminateLasso() {
     prepareGeometryChange();
     m_path = m_path.simplified();
     update();
+
+    m_lasso_terminated = true;
+}
+
+/**
+ * @brief GraphicsLassoItem::isLassoValid
+ * @return
+ *
+ * This function returns true if the lasso is a valid closed path
+ */
+bool GraphicsLassoItem::isLassoValid() const {
+    // Check if first point == last point
+    return m_path.pointAtPercent(0) == m_path.pointAtPercent(1);
 }
 
 
@@ -105,12 +115,15 @@ QPainterPath GraphicsLassoItem::shape() const {
 }
 
 void GraphicsLassoItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *) {
+    // Get the scene scale
+    qreal scene_scale = painter->deviceTransform().m11();
+
     // Draw the lasso with a multicolor dashed line (black and white)
     QPen pen;
-    pen.setWidth(LASSO_WIDTH);
+    pen.setWidthF(LASSO_WIDTH/scene_scale);
 
-    // Black dashed line
-    pen.setColor(Qt::black);
+    // Black dashed line (can be red if lasso invalid)
+    pen.setColor(m_lasso_terminated && !isLassoValid() ? Qt::red : Qt::black);
     pen.setDashPattern({1.0 * DASH_SIZE, 1.0 * DASH_SIZE});
     pen.setDashOffset(-m_anim_dash_offset);
     painter->setPen(pen);
@@ -119,12 +132,12 @@ void GraphicsLassoItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
     // White dashed line
     pen.setColor(Qt::white);
     pen.setDashPattern({1.0 * DASH_SIZE, 1.0 * DASH_SIZE});
-    pen.setDashOffset(-m_anim_dash_offset + 1.0 * DASH_SIZE); // + Offset w.r.t. Black dashes
+    pen.setDashOffset(-m_anim_dash_offset + 1.0 * DASH_SIZE);   // + Offset w.r.t. Black dashes
     painter->setPen(pen);
     painter->drawPath(m_path);
 
     // Fill the polygon if closed
-    if (m_path.pointAtPercent(0) == m_path.pointAtPercent(1)) {
+    if (isLassoValid()) {
         pen.setColor(Qt::transparent);
         painter->setPen(pen);
         painter->setBrush(QBrush(QColor(0,0,0,50)));
