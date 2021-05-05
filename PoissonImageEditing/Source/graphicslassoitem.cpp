@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QPainter>
 
-#define LASSO_WIDTH     2.0
+#define LASSO_WIDTH     1.5
 #define DASH_SIZE       6.0
 #define ANIM_INTERVAL   250   // ms
 
@@ -134,7 +134,7 @@ QPainterPath GraphicsLassoItem::shape() const {
 
 void GraphicsLassoItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *) {
     // Get the scene scale
-    qreal scene_scale = painter->deviceTransform().m11();
+    qreal scene_scale = painter->deviceTransform().m11() / painter->device()->devicePixelRatioF();
 
     // Draw the lasso with a multicolor dashed line (black and white)
     QPen pen;

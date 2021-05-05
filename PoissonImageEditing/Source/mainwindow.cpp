@@ -10,10 +10,13 @@
 #include <QImageReader>
 #include <QImageWriter>
 
+#include <QThread>
 #include <QDebug>
 
-#define IMAGE_EXTENSIONS "PNG (*.png);;JPG (*.jpg *.jpeg);;BMP (*.bmp);;TIFF (*.tif *.tiff)"
+#define IMAGE_EXTENSIONS "All Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff);;" \
+                         "PNG (*.png);;JPG (*.jpg *.jpeg);;BMP (*.bmp);;TIFF (*.tif *.tiff)"
 
+#define SOURCE_CHECKERBOARD_SIZE 10
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -41,20 +44,15 @@ MainWindow::MainWindow(QWidget *parent)
     m_pix_item_source = new QGraphicsPixmapItem;
     m_pix_item_target = new QGraphicsPixmapItem;
 
+    // Ensure the pixmap scaling is smooth
+    m_pix_item_source->setTransformationMode(Qt::SmoothTransformation);
+    m_pix_item_target->setTransformationMode(Qt::SmoothTransformation);
+
     m_scene_source->addItem(m_pix_item_source);
     m_scene_target->addItem(m_pix_item_target);
 
-    // Define a checkerboard background for the graphics views
-    QBrush checkerboard_brush(Qt::lightGray, Qt::Dense4Pattern);
-
-    // Zoom on the checkerboard to get squares of 20x20
-    QTransform transform = checkerboard_brush.transform();
-    transform.scale(20, 20);
-    checkerboard_brush.setTransform(transform);
-
-    // Apply the checkerboard brush
-    ui->graphicsViewSource->setBackgroundBrush(checkerboard_brush);
-
+    // Create the source checkerboard background
+    updateSourceCheckerboard();
 
     /*
      * Interface actions connection
@@ -83,6 +81,9 @@ void MainWindow::resizeEvent(QResizeEvent *e) {
     // Fit graphics views to the pixmap items
     ui->graphicsViewSource->fitInView(m_scene_source->sceneRect(), Qt::KeepAspectRatio);
     ui->graphicsViewTarget->fitInView(m_scene_target->sceneRect(), Qt::KeepAspectRatio);
+
+    // Update the checkerboard background
+    updateSourceCheckerboard();
 }
 
 
@@ -151,6 +152,9 @@ void MainWindow::updateSourceScene() {
 
     // Fit graphics view to the pixmap item
     ui->graphicsViewSource->fitInView(m_scene_source->sceneRect(), Qt::KeepAspectRatio);
+
+    // Update the source checkerboard
+    updateSourceCheckerboard();
 }
 
 /**
@@ -169,6 +173,24 @@ void MainWindow::updateTargetScene() {
     ui->graphicsViewTarget->fitInView(m_scene_target->sceneRect(), Qt::KeepAspectRatio);
 }
 
+void MainWindow::updateSourceCheckerboard() {
+    // Define a checkerboard background for the graphics views
+    QBrush checkerboard_brush(Qt::lightGray, Qt::Dense4Pattern);
+
+    // We want a checkerboard that is invariant to the graphics view scale.
+    // Create a tranformation matrix which is the inverse of the graphics view matrix.
+    QTransform transform = ui->graphicsViewSource->transform().inverted();
+
+    // Zoom on the checkerboard to get squares of 20x20
+    transform.scale(SOURCE_CHECKERBOARD_SIZE, SOURCE_CHECKERBOARD_SIZE);
+
+    // Apply the resulting transformation matrix to the brush
+    checkerboard_brush.setTransform(transform);
+
+    // Apply the checkerboard brush
+    ui->graphicsViewSource->setBackgroundBrush(checkerboard_brush);
+}
+
 /**
  * @brief MainWindow::tempTestAction
  *
@@ -180,9 +202,15 @@ void MainWindow::tempTestAction() {
 
     QImage img_part = m_source_image.copy(m_scene_source->getSelectionPath().boundingRect().toRect());
 
+    qDebug() << "Selection bounding rect:" << m_scene_source->getSelectionPath().boundingRect().toRect();
+
     std::array<MatrixXd,3> img_matrices = ComputationHandler::imageToMatrices(img_part);
 
     qDebug() << "red:" << img_matrices[0](0,0)
              << "\tgreen:" << img_matrices[1](0,0)
              << "\tblue:" << img_matrices[2](0,0);
+
+    MatrixXd mat_test(1000000,1000000);
+
+    thread()->sleep(1);
 }
