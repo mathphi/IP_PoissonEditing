@@ -85,6 +85,11 @@ void SourceGraphicsScene::removeLasso() {
     // Set the pointer to nullptr to indicate there is not lasso
     m_current_lasso = nullptr;
 
+    // If the previous lasso state was Drawn -> emit 'lassoRemoved' signal
+    if (m_lasso_state == SourceLassoState::Drawn) {
+        emit lassoRemoved();
+    }
+
     // Don't change the lasso state if currently disabled
     if (m_lasso_state != SourceLassoState::Disabled) {
         // Lasso status -> None
@@ -127,6 +132,9 @@ void SourceGraphicsScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
 
         // Mark lasso as drawn
         m_lasso_state = SourceLassoState::Drawn;
+
+        // Emit the 'lassoDrawn' signal
+        emit lassoDrawn(m_current_lasso->path());
     }
 }
 

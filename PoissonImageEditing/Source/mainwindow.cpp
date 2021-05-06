@@ -16,7 +16,6 @@
 #define IMAGE_EXTENSIONS "All Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff);;" \
                          "PNG (*.png);;JPG (*.jpg *.jpeg);;BMP (*.bmp);;TIFF (*.tif *.tiff)"
 
-#define SOURCE_CHECKERBOARD_SIZE 10
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -32,14 +31,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->graphicsViewSource->setScene(m_scene_source);
     ui->graphicsViewTarget->setScene(m_scene_target);
 
-    // Enable mouse tracking
-    ui->graphicsViewSource->setMouseTracking(true);
-    ui->graphicsViewTarget->setMouseTracking(true);
-
-    // Enable antialiasing for the graphics views
-    ui->graphicsViewSource->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-    ui->graphicsViewTarget->setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-
     // Create a Pixmap item for each graphics scene
     m_pix_item_source = new QGraphicsPixmapItem;
     m_pix_item_target = new QGraphicsPixmapItem;
@@ -50,9 +41,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_scene_source->addItem(m_pix_item_source);
     m_scene_target->addItem(m_pix_item_target);
-
-    // Create the source checkerboard background
-    updateSourceCheckerboard();
 
     /*
      * Interface actions connection
@@ -72,18 +60,6 @@ MainWindow::~MainWindow()
     delete ui;
     delete m_pix_item_source;
     delete m_pix_item_target;
-}
-
-
-void MainWindow::resizeEvent(QResizeEvent *e) {
-    Q_UNUSED(e);
-
-    // Fit graphics views to the pixmap items
-    ui->graphicsViewSource->fitInView(m_scene_source->sceneRect(), Qt::KeepAspectRatio);
-    ui->graphicsViewTarget->fitInView(m_scene_target->sceneRect(), Qt::KeepAspectRatio);
-
-    // Update the checkerboard background
-    updateSourceCheckerboard();
 }
 
 
@@ -149,12 +125,6 @@ void MainWindow::updateSourceScene() {
 
     // Set the scene rect to the source image rect
     m_scene_source->setSceneRect(0, 0, m_source_image.width(), m_source_image.height());
-
-    // Fit graphics view to the pixmap item
-    ui->graphicsViewSource->fitInView(m_scene_source->sceneRect(), Qt::KeepAspectRatio);
-
-    // Update the source checkerboard
-    updateSourceCheckerboard();
 }
 
 /**
@@ -172,25 +142,6 @@ void MainWindow::updateTargetScene() {
     // Fit graphics view to the pixmap item
     ui->graphicsViewTarget->fitInView(m_scene_target->sceneRect(), Qt::KeepAspectRatio);
 }
-
-void MainWindow::updateSourceCheckerboard() {
-    // Define a checkerboard background for the graphics views
-    QBrush checkerboard_brush(Qt::lightGray, Qt::Dense4Pattern);
-
-    // We want a checkerboard that is invariant to the graphics view scale.
-    // Create a tranformation matrix which is the inverse of the graphics view matrix.
-    QTransform transform = ui->graphicsViewSource->transform().inverted();
-
-    // Zoom on the checkerboard to get squares of 20x20
-    transform.scale(SOURCE_CHECKERBOARD_SIZE, SOURCE_CHECKERBOARD_SIZE);
-
-    // Apply the resulting transformation matrix to the brush
-    checkerboard_brush.setTransform(transform);
-
-    // Apply the checkerboard brush
-    ui->graphicsViewSource->setBackgroundBrush(checkerboard_brush);
-}
-
 /**
  * @brief MainWindow::tempTestAction
  *

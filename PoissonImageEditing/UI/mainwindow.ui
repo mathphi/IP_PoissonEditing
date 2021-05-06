@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout_2">
     <item>
-     <widget class="QGraphicsView" name="graphicsViewSource">
+     <widget class="ImageGraphicsView" name="graphicsViewSource">
       <property name="cursor" stdset="0">
        <cursorShape>CrossCursor</cursorShape>
       </property>
@@ -40,7 +40,7 @@
      <x>0</x>
      <y>0</y>
      <width>733</width>
-     <height>22</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -119,6 +119,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ImageGraphicsView</class>
+   <extends>QGraphicsView</extends>
+   <header>imagegraphicsview.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

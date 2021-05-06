@@ -20,17 +20,12 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-protected:
-    void resizeEvent(QResizeEvent *e) override;
-
 private slots:
     void openSourceImage();
     void openTargetImage();
 
     void updateSourceScene();
     void updateTargetScene();
-
-    void updateSourceCheckerboard();
 
     void tempTestAction();
 

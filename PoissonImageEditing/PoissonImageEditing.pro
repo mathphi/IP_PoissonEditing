@@ -11,6 +11,7 @@ CONFIG += c++11
 SOURCES += \
     Source/computationhandler.cpp \
     Source/graphicslassoitem.cpp \
+    Source/imagegraphicsview.cpp \
     Source/main.cpp \
     Source/mainwindow.cpp \
     Source/sourcegraphicsscene.cpp
@@ -18,6 +19,7 @@ SOURCES += \
 HEADERS += \
     Source/computationhandler.h \
     Source/graphicslassoitem.h \
+    Source/imagegraphicsview.h \
     Source/mainwindow.h \
     Source/sourcegraphicsscene.h
 
@@ -25,7 +27,12 @@ FORMS += \
     UI/mainwindow.ui
 
 
-INCLUDEPATH += 3rdparty/eigen
+INCLUDEPATH += 3rdparty/eigen Source/
+
+# Disable attributes warnings on MSYS/MXE due to gcc bug spamming the logs: Issue #2771
+win* | CONFIG(mingw-cross-env)|CONFIG(mingw-cross-env-shared) {
+    QMAKE_CXXFLAGS += -Wno-attributes
+}
 
 
 # Default rules for deployment.

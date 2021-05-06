@@ -2,6 +2,7 @@
 #define SOURCEGRAPHICSSCENE_H
 
 #include <QGraphicsScene>
+#include <QPainterPath>
 
 
 namespace SourceLassoState {
@@ -18,6 +19,8 @@ class GraphicsLassoItem;
 
 class SourceGraphicsScene : public QGraphicsScene
 {
+    Q_OBJECT
+
 public:
     SourceGraphicsScene(QObject *parent = nullptr);
     ~SourceGraphicsScene();
@@ -28,6 +31,10 @@ public:
 public slots:
     void enableLasso(bool en);
     void removeLasso();
+
+signals:
+    void lassoDrawn(const QPainterPath);
+    void lassoRemoved();
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
@@ -40,7 +47,6 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
-
     GraphicsLassoItem *m_current_lasso;
     SourceLassoState::SourceLassoState m_lasso_state;
 };
