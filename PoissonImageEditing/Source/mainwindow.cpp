@@ -9,6 +9,7 @@
 #include <QFileDialog>
 #include <QImageReader>
 #include <QImageWriter>
+#include <QElapsedTimer>
 
 #include <QThread>
 #include <QDebug>
@@ -155,13 +156,65 @@ void MainWindow::tempTestAction() {
 
     qDebug() << "Selection bounding rect:" << m_scene_source->getSelectionPath().boundingRect().toRect();
 
+    QElapsedTimer e_t;
+    e_t.start();
+
     std::array<MatrixXd,3> img_matrices = ComputationHandler::imageToMatrices(img_part);
+
+    qDebug() << "Conversion duration:" << e_t.nsecsElapsed() << "ns";
 
     qDebug() << "red:" << img_matrices[0](0,0)
              << "\tgreen:" << img_matrices[1](0,0)
              << "\tblue:" << img_matrices[2](0,0);
 
-    MatrixXd mat_test(1000000,1000000);
 
-    thread()->sleep(1);
+    e_t.restart();
+
+    SparseMatrixXd mat_test(1000000,1000000);
+
+    qDebug() << "Allocation duration:" << e_t.nsecsElapsed() << "ns";
+    e_t.restart();
+
+    mat_test.setIdentity();
+
+    qDebug() << "Identity duration:" << e_t.nsecsElapsed() << "ns";
+    e_t.restart();
+
+    mat_test = mat_test * 4;
+
+    qDebug() << "Scalar multiply duration:" << e_t.nsecsElapsed() << "ns";
+    e_t.restart();
+
+    float coeff = mat_test.coeff(0,0);
+
+    qDebug() << "Lookup duration:" << e_t.nsecsElapsed() << "ns";
+
+    qDebug() << mat_test.rows() << mat_test.cols() << coeff;
+
+
+    SparseMatrixXd mat_test2(1000000,1000000);
+
+    e_t.restart();
+
+    mat_test2.reserve(Eigen::VectorXi::Constant(mat_test.cols(),5));
+    for (int i = 0 ; i < mat_test.cols() ; i++) {
+        mat_test2.insert(i,i) = 4.0;
+
+        if (i > 0) {
+            mat_test2.insert(i,i-1) = -1.0;
+        }
+        if (i < 1000000-1) {
+            mat_test2.insert(i,i+1) = -1.0;
+        }
+        if (i > 1000-1) {
+            mat_test2.insert(i,i-1000) = -1.0;
+        }
+        if (i < 1000000-1000-1) {
+            mat_test2.insert(i,i+1000) = -1.0;
+        }
+    }
+
+    qDebug() << "Diagonal duration:" << e_t.nsecsElapsed() << "ns";
+
+    qDebug() << mat_test2.nonZeros() << mat_test2.coeff(0,0);
 }
