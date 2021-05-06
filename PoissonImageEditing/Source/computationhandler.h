@@ -2,6 +2,7 @@
 #define COMPUTATIONHANDLER_H
 
 #include <QObject>
+#include <QPainterPath>
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
@@ -13,6 +14,13 @@
 typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> MatrixXd;
 typedef Eigen::SparseMatrix<float> SparseMatrixXd;
 
+typedef std::array<MatrixXd,3> ImageMatricesRGB;
+
+struct SelectMaskMatrices {
+    MatrixXd mask;
+    MatrixXd inverted_mask;
+};
+
 
 class ComputationHandler : public QObject
 {
@@ -20,7 +28,12 @@ class ComputationHandler : public QObject
 public:
     explicit ComputationHandler(QObject *parent = nullptr);
 
-    static std::array<MatrixXd,3> imageToMatrices(QImage img);
+    static ImageMatricesRGB imageToMatrices(QImage img);
+    static QImage matricesToImage(ImageMatricesRGB im_rgb);
+    static QImage matricesToImage(ImageMatricesRGB im_rgb, MatrixXd alpha_mask);
+    static SelectMaskMatrices selectionToMask(QPainterPath selection_path);
+
+    static SparseMatrixXd laplacianMatrix(const QSize img_size);
 
 signals:
 

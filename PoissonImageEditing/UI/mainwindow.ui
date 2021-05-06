@@ -23,14 +23,20 @@
      </widget>
     </item>
     <item>
-     <widget class="Line" name="line">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
+     <widget class="QToolButton" name="transferButton">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="text">
+       <string>&gt;</string>
       </property>
      </widget>
     </item>
     <item>
-     <widget class="QGraphicsView" name="graphicsViewTarget"/>
+     <widget class="ImageGraphicsView" name="graphicsViewTarget"/>
     </item>
    </layout>
   </widget>

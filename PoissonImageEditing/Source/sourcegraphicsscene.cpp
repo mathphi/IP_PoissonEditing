@@ -133,8 +133,10 @@ void SourceGraphicsScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
         // Mark lasso as drawn
         m_lasso_state = SourceLassoState::Drawn;
 
-        // Emit the 'lassoDrawn' signal
-        emit lassoDrawn(m_current_lasso->path());
+        // Emit the 'lassoDrawn' signal if a valid lasso has been drawn
+        if (m_current_lasso->isLassoValid()) {
+         emit lassoDrawn(m_current_lasso->path());
+        }
     }
 }
 

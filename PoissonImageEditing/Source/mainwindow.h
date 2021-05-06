@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QPainterPath>
 
 class QGraphicsScene;
 class QGraphicsPixmapItem;
@@ -28,6 +29,9 @@ private slots:
     void updateTargetScene();
 
     void tempTestAction();
+
+    void sourceLassoDrawn(QPainterPath path);
+    void sourceLassoRemoved();
 
 private:
     Ui::MainWindow *ui;

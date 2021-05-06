@@ -94,6 +94,9 @@ void GraphicsLassoItem::terminateLasso(QRectF boundary_rect) {
         m_path = m_path.intersected(boundary_path);
     }
 
+    // Re-Simplify the intersected path
+    m_path = m_path.simplified();
+
     // Update graphics
     update();
 
