@@ -107,23 +107,23 @@ QImage ComputationHandler::matricesToImage(ImageMatricesRGB im_rgb, MatrixXd alp
 SelectMaskMatrices ComputationHandler::selectionToMask(QPainterPath selection_path) {
     SelectMaskMatrices smm;
 
-    // Dimension of the selection bounding rect
-    QRect b_rect = selection_path.boundingRect().toRect();
+    // Dimension of the selection bounding rect (with 1px margin)
+    QRect b_rect = selection_path.boundingRect().toAlignedRect().adjusted(-1, -1, 1, 1);
 
     // Allocating matrices
-    smm.mask = MatrixXd(b_rect.height(), b_rect.width());
-    smm.inverted_mask = MatrixXd(b_rect.height(), b_rect.width());
+    smm.positive_mask = MatrixXd(b_rect.height(), b_rect.width());
+    smm.negative_mask = MatrixXd(b_rect.height(), b_rect.width());
 
     // Mask = 1 inside the selection path, 0 outside (and vice-versa)
     for (int x = 0 ; x < b_rect.width() ; x++) {
         for (int y = 0 ; y < b_rect.height() ; y++) {
             if (selection_path.contains(QPoint(x,y) + b_rect.topLeft())) {
-                smm.mask(y,x) = 1.0;
-                smm.inverted_mask(y,x) = 0.0;
+                smm.positive_mask(y,x) = 1.0;
+                smm.negative_mask(y,x) = 0.0;
             }
             else {
-                smm.mask(y,x) = 0.0;
-                smm.inverted_mask(y,x) = 1.0;
+                smm.positive_mask(y,x) = 0.0;
+                smm.negative_mask(y,x) = 1.0;
             }
         }
     }

@@ -187,9 +187,12 @@ void MainWindow::tempTestAction() {
     if (!m_scene_source->isSelectionValid())
         return;
 
-    QImage img_part = m_source_image.copy(m_scene_source->getSelectionPath().boundingRect().toRect());
+    QRect select_rect = m_scene_source->getSelectionPath().boundingRect().toAlignedRect();
+    select_rect.adjust(-1, -1, 1, 1);
 
-    qDebug() << "Selection bounding rect:" << m_scene_source->getSelectionPath().boundingRect().toRect();
+    QImage img_part = m_source_image.copy(select_rect);
+
+    qDebug() << "Selection bounding rect:" << select_rect;
 
     QElapsedTimer e_t;
     e_t.start();
@@ -262,16 +265,17 @@ void MainWindow::tempTestAction() {
     e_t.restart();
 
     ImageMatricesRGB result;
-    result[0] = img_matrices[0].cwiseProduct(smm.mask);
-    result[1] = img_matrices[1].cwiseProduct(smm.mask);
-    result[2] = img_matrices[2].cwiseProduct(smm.mask);
+    result[0] = img_matrices[0].cwiseProduct(smm.positive_mask);
+    result[1] = img_matrices[1].cwiseProduct(smm.positive_mask);
+    result[2] = img_matrices[2].cwiseProduct(smm.positive_mask);
 
     qDebug() << "Elementwise product duration:" << e_t.nsecsElapsed() << "ns";
 
-    QImage img = ComputationHandler::matricesToImage(result, smm.mask);
+    QImage img = ComputationHandler::matricesToImage(result);
 
     m_target_image = img;
     updateTargetScene();
+
 
     e_t.restart();
 
