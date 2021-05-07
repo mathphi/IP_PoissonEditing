@@ -37,8 +37,7 @@ public:
 
     static SparseMatrixXd laplacianMatrix(const QSize img_size);
 
-    static VectorXd computeBoundaryConditionsSimple(
-            MatrixXd src_img_ch, MatrixXd tgt_img_ch, SelectMaskMatrices masks);
+    static VectorXd computeBoundaryConditionsSimple(MatrixXd src_img_ch, MatrixXd tgt_img_ch, SelectMaskMatrices masks);
 
 signals:
 

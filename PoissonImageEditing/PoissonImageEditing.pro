@@ -29,6 +29,8 @@ FORMS += \
 
 INCLUDEPATH += 3rdparty/eigen Source/
 
+RC_ICONS = Resources/Painting.ico
+
 # Disable attributes warnings on MSYS/MXE due to gcc bug spamming the logs: Issue #2771
 win* | CONFIG(mingw-cross-env)|CONFIG(mingw-cross-env-shared) {
     QMAKE_CXXFLAGS += -Wno-attributes
@@ -39,3 +41,6 @@ win* | CONFIG(mingw-cross-env)|CONFIG(mingw-cross-env-shared) {
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += \
+    Resources/resources.qrc

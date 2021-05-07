@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Poisson Image Blending</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../Resources/resources.qrc">
+    <normaloff>:/icons/Painting.ico</normaloff>:/icons/Painting.ico</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout_2">
     <item>
@@ -132,6 +136,8 @@
    <header>imagegraphicsview.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="../Resources/resources.qrc"/>
+ </resources>
  <connections/>
 </ui>
