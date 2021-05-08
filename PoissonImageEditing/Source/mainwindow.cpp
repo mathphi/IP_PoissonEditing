@@ -60,6 +60,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_scene_source, SIGNAL(lassoDrawn(QPainterPath)), this, SLOT(sourceLassoDrawn(QPainterPath)));
     connect(m_scene_source, SIGNAL(lassoRemoved()), this, SLOT(sourceLassoRemoved()));
 
+    // Drag & drop actions from graphics views
+    connect(ui->graphicsViewSource, SIGNAL(imageFileDropped(QString)), this, SLOT(openSourceImage(QString)));
+    connect(ui->graphicsViewTarget, SIGNAL(imageFileDropped(QString)), this, SLOT(openTargetImage(QString)));
+
     // Temp test action
     connect(ui->actionTemp_Test, SIGNAL(triggered(bool)), this, SLOT(tempTestAction()));
     connect(ui->transferButton, SIGNAL(clicked()), this, SLOT(tempTestAction()));
@@ -76,21 +80,36 @@ MainWindow::~MainWindow()
 /**
  * @brief MainWindow::openSourceImage
  *
- * This slot is called when the "Open source image" action is triggered
+ * This slot is called when the "Open source image" action is triggered.
  */
-void MainWindow::openSourceImage() {
-    // Open existing image file
-    QString filename = QFileDialog::getOpenFileName(
-                this,
-                "Open a source image",
-                QDir::homePath(),
-                IMAGE_EXTENSIONS);
+void MainWindow::openSourceImage(QString filename) {
+    // If no filename was specified -> file dialog
+    if (filename.isEmpty()) {
+        // Open existing image file
+        filename = QFileDialog::getOpenFileName(
+                        this,
+                        "Open a source image",
+                        QDir::homePath(),
+                        IMAGE_EXTENSIONS);
+    }
 
     // If dialog was closed
     if (filename.isEmpty())
         return;
 
-    m_source_image = QImage(filename);
+    // Open the image file and get its content
+    QImage new_image(filename);
+
+    // Check if this is a valid image
+    if (new_image.isNull()) {
+        QMessageBox::critical(
+                    this,
+                    "File error",
+                    "The specified image file could not be opened.");
+    }
+
+    // Update the source image
+    m_source_image = new_image;
 
     // Update the scene according to the newly opened image
     updateSourceScene();
@@ -107,20 +126,36 @@ void MainWindow::openSourceImage() {
  *
  * This slot is called when the "Open target image" action is triggered
  */
-void MainWindow::openTargetImage() {
-    // Open existing image file
-    QString filename = QFileDialog::getOpenFileName(
-                this,
-                "Open a target image",
-                QDir::homePath(),
-                IMAGE_EXTENSIONS);
+void MainWindow::openTargetImage(QString filename) {
+    // If no filename was specified -> file dialog
+    if (filename.isEmpty()) {
+        // Open existing image file
+        filename = QFileDialog::getOpenFileName(
+                        this,
+                        "Open a target image",
+                        QDir::homePath(),
+                        IMAGE_EXTENSIONS);
+    }
 
     // If dialog was closed
     if (filename.isEmpty())
         return;
 
-    m_target_image = QImage(filename);
+    // Open the image file and get its content
+    QImage new_image(filename);
 
+    // Check if this is a valid image
+    if (new_image.isNull()) {
+        QMessageBox::critical(
+                    this,
+                    "File error",
+                    "The specified image file could not be opened.");
+    }
+
+    // Update the target image
+    m_target_image = new_image;
+
+    // Update the scene according to the newly opened image
     updateTargetScene();
 
     // Enable transfer button if a lasso is already drawn

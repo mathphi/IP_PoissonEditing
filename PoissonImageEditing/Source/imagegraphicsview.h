@@ -16,6 +16,14 @@ public:
 protected:
     void resizeEvent(QResizeEvent *e) override;
 
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dragMoveEvent(QDragMoveEvent *event) override;
+    void dragLeaveEvent(QDragLeaveEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
+
+signals:
+    void imageFileDropped(QString);
+
 private slots:
     void updateViewCheckerboard();
     void updateViewAdjustment();

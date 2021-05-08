@@ -23,8 +23,8 @@ public:
     ~MainWindow();
 
 private slots:
-    void openSourceImage();
-    void openTargetImage();
+    void openSourceImage(QString filename = QString());
+    void openTargetImage(QString filename = QString());
 
     void updateSourceScene();
     void updateTargetScene();
