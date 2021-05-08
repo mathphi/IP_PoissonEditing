@@ -7,6 +7,8 @@
 
 #include "computationhandler.h"
 
+class QPropertyAnimation;
+
 class PastedSourceItem : public QGraphicsObject
 {
     Q_OBJECT
@@ -40,10 +42,15 @@ public:
     void setSelected(bool s);
     void updateItemControls();
 
+    bool isComputing();
+    void setComputing(bool en);
+
 protected:
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     virtual void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
+
+    virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
 
     virtual void focusInEvent(QFocusEvent *focusEvent) override;
     virtual void focusOutEvent(QFocusEvent *focusEvent) override;
@@ -54,6 +61,10 @@ private slots:
     void animateContour();
 
 private:
+    Q_PROPERTY(QColor waitAnimColor READ waitAnimColor WRITE setWaitAnimColor)
+    QColor waitAnimColor();
+    void setWaitAnimColor(QColor color);
+
     // Original/blended image data
     QImage m_orig_image;
     ImageMatricesRGB m_orig_matrices;
@@ -72,8 +83,13 @@ private:
     QTimer *m_anim_timer;
     qreal m_anim_dash_offset;
 
-    // Moving status attribute
+    // Wait computing animation
+    QPropertyAnimation *m_prop_anim_wait;
+    QColor m_wait_anim_color;
+
+    // Status attributes
     bool m_is_moving;
+    bool m_is_computing;
 };
 
 #endif // PASTEDSOURCEITEM_H

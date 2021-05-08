@@ -1,6 +1,7 @@
 #include "pastedsourceitem.h"
 
 #include <QGraphicsSceneMouseEvent>
+#include <QPropertyAnimation>
 #include <QGraphicsScene>
 #include <QFocusEvent>
 #include <QPainter>
@@ -35,8 +36,9 @@ PastedSourceItem::PastedSourceItem(
     // Copy the laplacian matrix
     m_laplacian_matrix = laplacian_matrix;
 
-    // Initialize to non-moving state
+    // Initialize status attributes
     m_is_moving = false;
+    m_is_computing = false;
 
     // This item accepts mouse hover events
     setAcceptHoverEvents(true);
@@ -57,6 +59,16 @@ PastedSourceItem::PastedSourceItem(
 
     // Dash offset (will be dynamically updated by timer)
     m_anim_dash_offset = 0.0;
+
+    // Create the wait animation property animator
+    m_wait_anim_color = Qt::white;
+    m_prop_anim_wait = new QPropertyAnimation(this, "waitAnimColor", this);
+    m_prop_anim_wait->setStartValue(QColor(Qt::white));
+    m_prop_anim_wait->setKeyValueAt(0.5, QColor(150, 190, 255));
+    m_prop_anim_wait->setEndValue(QColor(Qt::white));
+    m_prop_anim_wait->setEasingCurve(QEasingCurve::InOutSine);
+    m_prop_anim_wait->setDuration(2000);
+    m_prop_anim_wait->setLoopCount(-1);     // Infinite repetitions
 
     connect(m_anim_timer, SIGNAL(timeout()), this, SLOT(animateContour()));
 }
@@ -104,13 +116,22 @@ void PastedSourceItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
     // Get the scene scale
     qreal scene_scale = painter->deviceTransform().m11() / painter->device()->devicePixelRatioF();
 
-    // Draw the pixmap
-    painter->drawPixmap(0, 0, m_pixmap);
+    if (!isComputing()) {
+        // Draw the pixmap
+        painter->drawPixmap(0, 0, m_pixmap);
+    }
 
     QPen pen;
     pen.setWidthF(SELECTION_WIDTH/scene_scale);
 
-    if (isMoving()) {
+    if (isComputing()) {
+        // Translucent-white filling
+        pen.setColor(Qt::transparent);
+        painter->setPen(pen);
+        painter->setBrush(QBrush(m_wait_anim_color));
+        painter->drawPolygon(m_selection_path.toFillPolygon());
+    }
+    else if (isMoving()) {
         // Do nothing
     }
     else if (isSelected()) {
@@ -266,8 +287,16 @@ void PastedSourceItem::setSelected(bool s) {
  * This function updates the control policy of the item.
  */
 void PastedSourceItem::updateItemControls() {
+    // If blending computation is running
+    if (isComputing()) {
+        // This item becomes fixed
+        setFlag(QGraphicsItem::ItemIsMovable, false);
+
+        // The cursor is now the loading cursor
+        setCursor(Qt::WaitCursor);
+    }
     // If it has been selected
-    if (isSelected()) {
+    else if (isSelected()) {
         // This item becomes movable
         setFlag(QGraphicsItem::ItemIsMovable, true);
 
@@ -276,12 +305,64 @@ void PastedSourceItem::updateItemControls() {
     }
     // If it has been unselected
     else {
-        // This item becomes movable
+        // This item becomes fixed
         setFlag(QGraphicsItem::ItemIsMovable, false);
 
-        // The cursor is now the move cursor
+        // The cursor is now the hand cursor
         setCursor(Qt::PointingHandCursor);
     }
+}
+
+/**
+ * @brief PastedSourceItem::isComputing
+ * @return
+ *
+ * This function returns true if this item is currently computing
+ */
+bool PastedSourceItem::isComputing() {
+    return m_is_computing;
+}
+
+/**
+ * @brief PastedSourceItem::setComputing
+ * @param en
+ *
+ * This function sets the 'computing' state (+ enables waiting animation)
+ */
+void PastedSourceItem::setComputing(bool en) {
+    m_is_computing = en;
+
+    // Start/stop the waiting animation
+    if (en) {
+        m_prop_anim_wait->start();
+    }
+    else {
+        m_prop_anim_wait->stop();
+    }
+}
+
+/**
+ * @brief PastedSourceItem::waitAnimColor
+ * @return
+ *
+ * This function returns the current color of the wait animation.
+ */
+QColor PastedSourceItem::waitAnimColor() {
+    return m_wait_anim_color;
+}
+
+/**
+ * @brief PastedSourceItem::setWaitAnimColor
+ * @param progress
+ *
+ * This function updates the wait animation color.
+ */
+void PastedSourceItem::setWaitAnimColor(QColor color) {
+    // Update the animation color
+    m_wait_anim_color = color;
+
+    // Update the graphics
+    update();
 }
 
 
@@ -320,6 +401,13 @@ void PastedSourceItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
 
     // Update item controls (enable moving)
     updateItemControls();
+}
+
+//FIXME: this function is here to test the 'computing' state
+void PastedSourceItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) {
+    Q_UNUSED(event);
+
+    setComputing(!isComputing());
 }
 
 void PastedSourceItem::focusInEvent(QFocusEvent *focusEvent) {
