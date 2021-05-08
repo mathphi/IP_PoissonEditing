@@ -14,6 +14,7 @@ SOURCES += \
     Source/imagegraphicsview.cpp \
     Source/main.cpp \
     Source/mainwindow.cpp \
+    Source/pastedsourceitem.cpp \
     Source/sourcegraphicsscene.cpp
 
 HEADERS += \
@@ -21,6 +22,7 @@ HEADERS += \
     Source/graphicslassoitem.h \
     Source/imagegraphicsview.h \
     Source/mainwindow.h \
+    Source/pastedsourceitem.h \
     Source/sourcegraphicsscene.h
 
 FORMS += \

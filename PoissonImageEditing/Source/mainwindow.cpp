@@ -3,6 +3,7 @@
 
 #include "sourcegraphicsscene.h"
 #include "computationhandler.h"
+#include "pastedsourceitem.h"
 
 #include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
@@ -271,10 +272,31 @@ void MainWindow::tempTestAction() {
 
     qDebug() << "Elementwise product duration:" << e_t.nsecsElapsed() << "ns";
 
-    QImage img = ComputationHandler::matricesToImage(result);
+    QImage img = ComputationHandler::matricesToImage(result, smm.positive_mask);
 
-    m_target_image = img;
-    updateTargetScene();
+
+
+    // Prepare the Source Image Pack for the item
+    SourceImagePack img_pack;
+    img_pack.image = img;
+    img_pack.matrices = result;
+    img_pack.masks = smm;
+
+    // Normalize the selection path to its bounding rect (with 1px margin)
+    QPainterPath p = m_scene_source->getSelectionPath();
+    p.translate(-p.boundingRect().topLeft() + QPointF(1,1));
+
+    // Create the Pasted Source Item
+    PastedSourceItem *src_item = new PastedSourceItem(img_pack, p);
+    m_scene_target->addItem(src_item);
+
+    // Place the item on the center of the target
+    src_item->setPos(QPointF(m_scene_target->sceneRect().width()/2 - src_item->boundingRect().width()/2,
+                             m_scene_target->sceneRect().height()/2 - src_item->boundingRect().height()/2));
+
+    // Set the new item as selected
+    src_item->setSelected(true);
+
 
 
     e_t.restart();

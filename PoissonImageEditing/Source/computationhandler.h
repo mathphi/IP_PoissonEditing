@@ -1,6 +1,7 @@
 #ifndef COMPUTATIONHANDLER_H
 #define COMPUTATIONHANDLER_H
 
+#include <QImage>
 #include <QObject>
 #include <QPainterPath>
 
@@ -20,6 +21,12 @@ typedef std::array<MatrixXd,3> ImageMatricesRGB;
 struct SelectMaskMatrices {
     MatrixXd positive_mask;
     MatrixXd negative_mask;
+};
+
+struct SourceImagePack {
+    QImage image;
+    ImageMatricesRGB matrices;
+    SelectMaskMatrices masks;
 };
 
 
