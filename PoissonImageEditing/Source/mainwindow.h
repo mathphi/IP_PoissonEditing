@@ -8,6 +8,7 @@ class QGraphicsScene;
 class QGraphicsPixmapItem;
 
 class SourceGraphicsScene;
+class TargetGraphicsScene;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -37,7 +38,7 @@ private:
     Ui::MainWindow *ui;
 
     SourceGraphicsScene *m_scene_source;
-    QGraphicsScene *m_scene_target;
+    TargetGraphicsScene *m_scene_target;
 
     QGraphicsPixmapItem *m_pix_item_source;
     QGraphicsPixmapItem *m_pix_item_target;

@@ -16,7 +16,11 @@
 #define ANIM_INTERVAL   250   // ms
 
 
-PastedSourceItem::PastedSourceItem(SourceImagePack img_pack, QPainterPath selection_path, QGraphicsItem *parent)
+PastedSourceItem::PastedSourceItem(
+        SourceImagePack img_pack,
+        SparseMatrixXd laplacian_matrix,
+        QPainterPath selection_path,
+        QGraphicsItem *parent)
     : QGraphicsObject(parent)
 {
     // Save the source image pack
@@ -27,6 +31,9 @@ PastedSourceItem::PastedSourceItem(SourceImagePack img_pack, QPainterPath select
     // Convert the original image into pixmap (for display)
     m_pixmap = QPixmap::fromImage(m_orig_image);
     m_selection_path = selection_path;
+
+    // Copy the laplacian matrix
+    m_laplacian_matrix = laplacian_matrix;
 
     // Initialize to non-moving state
     m_is_moving = false;
@@ -129,14 +136,14 @@ void PastedSourceItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
         painter->drawPolygon(m_selection_path.toFillPolygon());
 
         // Translucent-black dashed path
-        pen.setColor(QColor(0,0,0,75));
+        pen.setColor(QColor(0,0,0,125));
         pen.setDashPattern({1.0 * DASH_SIZE, 1.0 * DASH_SIZE});
         pen.setDashOffset(-m_anim_dash_offset);
         painter->setPen(pen);
         painter->drawPath(m_selection_path);
 
         // Translucent-white dashed path
-        pen.setColor(QColor(255,255,255,75));
+        pen.setColor(QColor(255,255,255,125));
         pen.setDashPattern({1.0 * DASH_SIZE, 1.0 * DASH_SIZE});
         pen.setDashOffset(-m_anim_dash_offset + 1.0 * DASH_SIZE);   // + Offset w.r.t. Black dashes
         painter->setPen(pen);
@@ -216,6 +223,16 @@ void PastedSourceItem::setBlendedPack(SourceImagePack img_pack) {
  */
 SelectMaskMatrices PastedSourceItem::masks() {
     return m_masks;
+}
+
+/**
+ * @brief PastedSourceItem::getLaplacianMatrix
+ * @return
+ *
+ * This function returns the sparse laplacian matrix
+ */
+SparseMatrixXd PastedSourceItem::getLaplacianMatrix() {
+    return m_laplacian_matrix;
 }
 
 /**

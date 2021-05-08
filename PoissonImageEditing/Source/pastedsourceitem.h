@@ -12,7 +12,10 @@ class PastedSourceItem : public QGraphicsObject
     Q_OBJECT
 
 public:
-    PastedSourceItem(SourceImagePack img_pack, QPainterPath selection_path, QGraphicsItem *parent = nullptr);
+    PastedSourceItem(SourceImagePack img_pack,
+                     SparseMatrixXd laplacian_matrix,
+                     QPainterPath selection_path,
+                     QGraphicsItem *parent = nullptr);
     ~PastedSourceItem();
 
     // Painting functions
@@ -30,6 +33,7 @@ public:
     void setBlendedPack(SourceImagePack img_pack);
 
     SelectMaskMatrices masks();
+    SparseMatrixXd getLaplacianMatrix();
 
     // Item control functions
     bool isMoving();
@@ -58,6 +62,7 @@ private:
     ImageMatricesRGB m_blended_matrices;
 
     SelectMaskMatrices m_masks;
+    SparseMatrixXd m_laplacian_matrix;
 
     // Graphics attributes
     QPixmap m_pixmap;

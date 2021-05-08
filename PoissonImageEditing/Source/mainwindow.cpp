@@ -2,15 +2,17 @@
 #include "ui_mainwindow.h"
 
 #include "sourcegraphicsscene.h"
+#include "targetgraphicsscene.h"
 #include "computationhandler.h"
 #include "pastedsourceitem.h"
 
 #include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
-#include <QFileDialog>
+#include <QElapsedTimer>
 #include <QImageReader>
 #include <QImageWriter>
-#include <QElapsedTimer>
+#include <QFileDialog>
+#include <QMessageBox>
 
 #include <QThread>
 #include <QDebug>
@@ -27,7 +29,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Create graphics scenes
     m_scene_source = new SourceGraphicsScene(this);
-    m_scene_target = new QGraphicsScene(this);
+    m_scene_target = new TargetGraphicsScene(this);
 
     // Bind graphics scenes to their view
     ui->graphicsViewSource->setScene(m_scene_source);
@@ -275,30 +277,6 @@ void MainWindow::tempTestAction() {
     QImage img = ComputationHandler::matricesToImage(result, smm.positive_mask);
 
 
-
-    // Prepare the Source Image Pack for the item
-    SourceImagePack img_pack;
-    img_pack.image = img;
-    img_pack.matrices = result;
-    img_pack.masks = smm;
-
-    // Normalize the selection path to its bounding rect (with 1px margin)
-    QPainterPath p = m_scene_source->getSelectionPath();
-    p.translate(-p.boundingRect().topLeft() + QPointF(1,1));
-
-    // Create the Pasted Source Item
-    PastedSourceItem *src_item = new PastedSourceItem(img_pack, p);
-    m_scene_target->addItem(src_item);
-
-    // Place the item on the center of the target
-    src_item->setPos(QPointF(m_scene_target->sceneRect().width()/2 - src_item->boundingRect().width()/2,
-                             m_scene_target->sceneRect().height()/2 - src_item->boundingRect().height()/2));
-
-    // Set the new item as selected
-    src_item->setSelected(true);
-
-
-
     e_t.restart();
 
     SparseMatrixXd laplacian_mat = ComputationHandler::laplacianMatrix(img_part.size());
@@ -308,4 +286,30 @@ void MainWindow::tempTestAction() {
     qDebug() << "NNZ:" << laplacian_mat.nonZeros();
 
 
+    if (!m_scene_target->isRectangleInsertable(img.rect())) {
+        QMessageBox::critical(
+                    NULL,
+                    "Oversized source",
+                    "The source item you are trying to paste is larger than the target.\n"
+                    "Try again with a smaller source or a larger target.");
+    }
+    else {
+        // Prepare the Source Image Pack for the item
+        SourceImagePack img_pack;
+        img_pack.image = img;
+        img_pack.matrices = result;
+        img_pack.masks = smm;
+
+        // Normalize the selection path to its bounding rect (with 1px margin)
+        QPainterPath p = m_scene_source->getSelectionPath();
+        p.translate(-p.boundingRect().topLeft()
+                    + QPointF((img.width() - p.boundingRect().width()) / 2.0, (img.height() - p.boundingRect().height()) / 2.0)
+                    + QPointF(0.5,0.5));
+        // pixel alignment margin + 0.5 to align the selection path on the center of the pixel
+
+        // Create the Pasted Source Item
+        PastedSourceItem *src_item = new PastedSourceItem(img_pack, laplacian_mat, p);
+
+        m_scene_target->addSourceItem(src_item);
+    }
 }

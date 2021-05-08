@@ -34,8 +34,15 @@
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
+      <property name="styleSheet">
+       <string notr="true"/>
+      </property>
       <property name="text">
-       <string>&gt;</string>
+       <string/>
+      </property>
+      <property name="icon">
+       <iconset resource="../Resources/resources.qrc">
+        <normaloff>:/images/go-next.svg</normaloff>:/images/go-next.svg</iconset>
       </property>
      </widget>
     </item>
