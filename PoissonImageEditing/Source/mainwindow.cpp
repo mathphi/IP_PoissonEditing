@@ -28,6 +28,9 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    // Create the computation handler
+    m_computation_handler = new ComputationHandler(this);
+
     // Create graphics scenes
     m_scene_source = new SourceGraphicsScene(this);
     m_scene_target = new TargetGraphicsScene(this);
@@ -343,9 +346,32 @@ void MainWindow::transferLassoSelection() {
     if (m_target_image.isNull())
         return;
 
+    // Get the selection lasso bounding rect aligned on the pixels
+    QRect select_rect = m_scene_source->getSelectionPath().boundingRect().toAlignedRect();
 
-    tempTestAction();
+    // Add 1px margin to the lasso bounding rect
+    select_rect.adjust(-1, -1, 1, 1);
 
+    // Check if the selection can enter in the target image
+    if (!m_scene_target->isRectangleInsertable(select_rect)) {
+        QMessageBox::critical(
+                    this,
+                    "Oversized source",
+                    "The source item you are trying to paste is larger than the target.\n"
+                    "Try again with a smaller source or a larger target.");
+
+        return;
+    }
+
+    // Get a copy of the source image from inside the bounding rect
+    QImage src_img_part = m_source_image.copy(select_rect);
+
+    // Normalize the selection path to its bounding rect (with 1px margin)
+    QPainterPath path = m_scene_source->getSelectionPath();
+
+    // Create the Pasted Source Item
+    PastedSourceItem *src_item = new PastedSourceItem(src_img_part, path, m_computation_handler);
+    m_scene_target->addSourceItem(src_item);
 }
 
 /**
@@ -428,7 +454,7 @@ void MainWindow::tempTestAction() {
 
 */
     e_t.restart();
-
+/*
     SelectMaskMatrices smm = ComputationHandler::selectionToMask(m_scene_source->getSelectionPath());
 
     qDebug() << "Mask generation duration:" << e_t.nsecsElapsed() << "ns";
@@ -446,7 +472,8 @@ void MainWindow::tempTestAction() {
 
     e_t.restart();
 
-    SparseMatrixXd laplacian_mat = ComputationHandler::laplacianMatrix(img_part.size());
+    // Remove 2px (1px margin top/bottom; right/left)
+    SparseMatrixXd laplacian_mat = ComputationHandler::laplacianMatrix(img_part.size() - QSize(2,2), smm);
 
     qDebug() << "Laplacian generation duration:" << e_t.nsecsElapsed() << "ns";
     qDebug() << "Size:" << laplacian_mat.rows() << "x" << laplacian_mat.cols();
@@ -464,7 +491,7 @@ void MainWindow::tempTestAction() {
         // Prepare the Source Image Pack for the item
         SourceImagePack img_pack;
         img_pack.image = img;
-        img_pack.matrices = result;
+        img_pack.matrices = img_matrices;
         img_pack.masks = smm;
 
         // Normalize the selection path to its bounding rect (with 1px margin)
@@ -478,5 +505,92 @@ void MainWindow::tempTestAction() {
         PastedSourceItem *src_item = new PastedSourceItem(img_pack, laplacian_mat, p);
 
         m_scene_target->addSourceItem(src_item);
-    }
+
+        e_t.restart();
+
+        VectorXd grad_r = ComputationHandler::computeImageGradient(img_matrices[0], smm);
+        VectorXd grad_g = ComputationHandler::computeImageGradient(img_matrices[1], smm);
+        VectorXd grad_b = ComputationHandler::computeImageGradient(img_matrices[2], smm);
+
+        qDebug() << "Gradient computation duration:" << e_t.nsecsElapsed() << "ns";
+        e_t.restart();
+
+        QRect copy_rect(src_item->pos().toPoint(), src_item->boundingRect().size().toSize());
+        QImage tgt_img = m_target_image.copy(copy_rect);
+        ImageMatricesRGB tgt_matrices = ComputationHandler::imageToMatrices(tgt_img);
+
+        qDebug() << "Target image extraction duration:" << e_t.nsecsElapsed() << "ns";
+        e_t.restart();
+
+        VectorXd bound_r = ComputationHandler::computeBoundaryNeighbors(tgt_matrices[0], smm);
+        VectorXd bound_g = ComputationHandler::computeBoundaryNeighbors(tgt_matrices[1], smm);
+        VectorXd bound_b = ComputationHandler::computeBoundaryNeighbors(tgt_matrices[2], smm);
+
+        qDebug() << "Boundaries computation duration:" << e_t.nsecsElapsed() << "ns";
+        e_t.restart();
+
+        VectorXd b_r = grad_r + bound_r;
+        VectorXd b_g = grad_g + bound_g;
+        VectorXd b_b = grad_b + bound_b;
+
+        qDebug() << "B vector sum duration:" << e_t.nsecsElapsed() << "ns";
+        e_t.restart();
+
+        Eigen::ConjugateGradient<Eigen::SparseMatrix<float>> solver;
+        solver.analyzePattern(laplacian_mat);
+        solver.factorize(laplacian_mat);
+
+        qDebug() << "Solver init. duration:" << e_t.nsecsElapsed() << "ns";
+        e_t.restart();
+
+        VectorXd x_r = solver.solve(b_r);
+
+        qDebug() << "Solved: red";
+
+        VectorXd x_g = solver.solve(b_g);
+
+        qDebug() << "Solved: green";
+
+        VectorXd x_b = solver.solve(b_b);
+
+        qDebug() << "Solved: blue";
+
+        qDebug() << "Solving duration:" << e_t.nsecsElapsed() << "ns";
+        e_t.restart();
+
+        MatrixXd x_mat_r = ComputationHandler::vectorToMatrixImage(x_r, img_part.size() - QSize(2,2));
+        MatrixXd x_mat_g = ComputationHandler::vectorToMatrixImage(x_g, img_part.size() - QSize(2,2));
+        MatrixXd x_mat_b = ComputationHandler::vectorToMatrixImage(x_b, img_part.size() - QSize(2,2));
+
+        qDebug() << "Reshape duration:" << e_t.nsecsElapsed() << "ns";
+        e_t.restart();
+
+        MatrixXd x_mat_r_outer(img_part.height(), img_part.width());
+        MatrixXd x_mat_g_outer(img_part.height(), img_part.width());
+        MatrixXd x_mat_b_outer(img_part.height(), img_part.width());
+
+        x_mat_r_outer.block(1, 1, x_mat_r.rows(), x_mat_r.cols()) = x_mat_r;
+        x_mat_g_outer.block(1, 1, x_mat_g.rows(), x_mat_g.cols()) = x_mat_g;
+        x_mat_b_outer.block(1, 1, x_mat_b.rows(), x_mat_b.cols()) = x_mat_b;
+
+        qDebug() << "Block operation duration:" << e_t.nsecsElapsed() << "ns";
+        e_t.restart();
+
+        ImageMatricesRGB x_mat = {
+            x_mat_r_outer,
+            x_mat_g_outer,
+            x_mat_b_outer,
+        };
+
+        QImage x_img = ComputationHandler::matricesToImage(x_mat, smm.positive_mask);
+
+        qDebug() << "Matrix to image duration:" << e_t.nsecsElapsed() << "ns";
+
+        SourceImagePack sip;
+        sip.image = x_img;
+        sip.matrices = x_mat;
+        sip.masks = smm;
+
+        src_item->setBlendedPack(sip);
+    }*/
 }

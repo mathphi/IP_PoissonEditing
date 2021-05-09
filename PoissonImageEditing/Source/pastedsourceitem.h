@@ -14,9 +14,9 @@ class PastedSourceItem : public QGraphicsObject
     Q_OBJECT
 
 public:
-    PastedSourceItem(SourceImagePack img_pack,
-                     SparseMatrixXd laplacian_matrix,
+    PastedSourceItem(QImage src_img,
                      QPainterPath selection_path,
+                     ComputationHandler *ch_ptr,
                      QGraphicsItem *parent = nullptr);
     ~PastedSourceItem();
 
@@ -25,17 +25,28 @@ public:
     QPainterPath shape() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *) override;
 
+    QPainterPath getSelectionPath();
+
     // Image data manipulation function
     QImage originalImage();
+
+    QImage originalImageMasked();
+    void setOriginalImageMasked(QImage img);
+
     ImageMatricesRGB originalMatrices();
-    void setOriginalPack(SourceImagePack img_pack);
+    void setOriginalMatrices(ImageMatricesRGB img_mat);
 
     QImage blendedImage();
-    ImageMatricesRGB blendedMatrices();
-    void setBlendedPack(SourceImagePack img_pack);
+    void setBlendedImage(QImage img);
 
     SelectMaskMatrices masks();
-    SparseMatrixXd getLaplacianMatrix();
+    void setMasks(SelectMaskMatrices masks);
+
+    SparseMatrixXd laplacianMatrix();
+    void setLaplacianMatrix(SparseMatrixXd lapl);
+
+    ImageVectorRGB gradientVectors();
+    void setGradientVectors(ImageVectorRGB grad_vects);
 
     // Item control functions
     bool isMoving();
@@ -44,6 +55,8 @@ public:
 
     bool isComputing();
     void setComputing(bool en);
+
+    void transferFinished();
 
 protected:
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
@@ -67,17 +80,20 @@ private:
 
     // Original/blended image data
     QImage m_orig_image;
+    QImage m_orig_image_masked;
     ImageMatricesRGB m_orig_matrices;
 
     QImage m_blended_image;
-    ImageMatricesRGB m_blended_matrices;
 
     SelectMaskMatrices m_masks;
     SparseMatrixXd m_laplacian_matrix;
 
+    ImageVectorRGB m_gradient_vectors;
+
     // Graphics attributes
     QPixmap m_pixmap;
     QPainterPath m_selection_path;
+    QPainterPath m_normalized_path;
 
     // Contour animation
     QTimer *m_anim_timer;
@@ -90,6 +106,10 @@ private:
     // Status attributes
     bool m_is_moving;
     bool m_is_computing;
+
+    // Pointer to the computation handler
+    ComputationHandler *m_computation_hander;
+    TransferComputationUnit *m_transfer_job;
 };
 
 #endif // PASTEDSOURCEITEM_H

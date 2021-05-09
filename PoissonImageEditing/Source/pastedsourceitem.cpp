@@ -1,4 +1,5 @@
 #include "pastedsourceitem.h"
+#include "transfercomputationunit.h"
 
 #include <QGraphicsSceneMouseEvent>
 #include <QPropertyAnimation>
@@ -17,24 +18,39 @@
 #define ANIM_INTERVAL   250   // ms
 
 
-PastedSourceItem::PastedSourceItem(
-        SourceImagePack img_pack,
-        SparseMatrixXd laplacian_matrix,
+PastedSourceItem::PastedSourceItem(QImage src_img,
         QPainterPath selection_path,
+        ComputationHandler *ch_ptr,
         QGraphicsItem *parent)
     : QGraphicsObject(parent)
 {
-    // Save the source image pack
-    m_orig_image = img_pack.image;
-    m_orig_matrices = img_pack.matrices;
-    m_masks = img_pack.masks;
+    // Save the pointer to the computation handler
+    m_computation_hander = ch_ptr;
+    m_transfer_job = nullptr;
 
-    // Convert the original image into pixmap (for display)
+    // Save the source image
+    m_orig_image = src_img;
+
+    // Set the drawn pixmap
     m_pixmap = QPixmap::fromImage(m_orig_image);
+
+    // Save the selection path
     m_selection_path = selection_path;
 
-    // Copy the laplacian matrix
-    m_laplacian_matrix = laplacian_matrix;
+    ///////////////
+    // Save a normalized version of the selection path
+    m_normalized_path = selection_path;
+
+    // Place the path origin to (0,0)
+    m_normalized_path.translate(-selection_path.boundingRect().topLeft());
+
+    // Add the 1px margin to the path
+    QSizeF path_size = selection_path.boundingRect().size();
+    m_normalized_path.translate(QPointF((src_img.width()-path_size.width())/2.0, (src_img.height()-path_size.height())/2.0));
+
+    // Add 0.5 to align the selection path on the center of the pixel
+    m_normalized_path.translate(0.5,0.5);
+    ///////////////
 
     // Initialize status attributes
     m_is_moving = false;
@@ -71,6 +87,13 @@ PastedSourceItem::PastedSourceItem(
     m_prop_anim_wait->setLoopCount(-1);     // Infinite repetitions
 
     connect(m_anim_timer, SIGNAL(timeout()), this, SLOT(animateContour()));
+
+
+    // Switch in computing mode
+    setComputing(true);
+
+    // Send the transfer job to the computation handler
+    m_transfer_job = m_computation_hander->startSourceTransferJob(this);
 }
 
 PastedSourceItem::~PastedSourceItem() {
@@ -97,7 +120,7 @@ void PastedSourceItem::animateContour() {
 }
 
 QRectF PastedSourceItem::boundingRect() const {
-    return m_pixmap.rect();
+    return m_orig_image.rect();
 }
 
 QPainterPath PastedSourceItem::shape() const {
@@ -106,8 +129,8 @@ QPainterPath PastedSourceItem::shape() const {
     ps.setWidth(SELECTION_WIDTH);
 
     // Contour path
-    QPainterPath p = ps.createStroke(m_selection_path);
-    p.addPath(m_selection_path);
+    QPainterPath p = ps.createStroke(m_normalized_path);
+    p.addPath(m_normalized_path);
 
     return p;
 }
@@ -129,7 +152,7 @@ void PastedSourceItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
         pen.setColor(Qt::transparent);
         painter->setPen(pen);
         painter->setBrush(QBrush(m_wait_anim_color));
-        painter->drawPolygon(m_selection_path.toFillPolygon());
+        painter->drawPolygon(m_normalized_path.toFillPolygon());
     }
     else if (isMoving()) {
         // Do nothing
@@ -140,38 +163,42 @@ void PastedSourceItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
         pen.setDashPattern({1.0 * DASH_SIZE, 1.0 * DASH_SIZE});
         pen.setDashOffset(-m_anim_dash_offset);
         painter->setPen(pen);
-        painter->drawPath(m_selection_path);
+        painter->drawPath(m_normalized_path);
 
         // White dashed path
         pen.setColor(QColor(255,255,255,255));
         pen.setDashPattern({1.0 * DASH_SIZE, 1.0 * DASH_SIZE});
         pen.setDashOffset(-m_anim_dash_offset + 1.0 * DASH_SIZE);   // + Offset w.r.t. Black dashes
         painter->setPen(pen);
-        painter->drawPath(m_selection_path);
+        painter->drawPath(m_normalized_path);
     }
     else if (isUnderMouse()) {
         // Translucent-white filling
         pen.setColor(Qt::transparent);
         painter->setPen(pen);
         painter->setBrush(QBrush(QColor(255,255,255,60)));
-        painter->drawPolygon(m_selection_path.toFillPolygon());
+        painter->drawPolygon(m_normalized_path.toFillPolygon());
 
         // Translucent-black dashed path
         pen.setColor(QColor(0,0,0,125));
         pen.setDashPattern({1.0 * DASH_SIZE, 1.0 * DASH_SIZE});
         pen.setDashOffset(-m_anim_dash_offset);
         painter->setPen(pen);
-        painter->drawPath(m_selection_path);
+        painter->drawPath(m_normalized_path);
 
         // Translucent-white dashed path
         pen.setColor(QColor(255,255,255,125));
         pen.setDashPattern({1.0 * DASH_SIZE, 1.0 * DASH_SIZE});
         pen.setDashOffset(-m_anim_dash_offset + 1.0 * DASH_SIZE);   // + Offset w.r.t. Black dashes
         painter->setPen(pen);
-        painter->drawPath(m_selection_path);
+        painter->drawPath(m_normalized_path);
     }
 }
 
+
+QPainterPath PastedSourceItem::getSelectionPath() {
+    return m_selection_path;
+}
 
 /**
  * @brief PastedSourceItem::originalImage
@@ -181,6 +208,21 @@ void PastedSourceItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
  */
 QImage PastedSourceItem::originalImage() {
     return m_orig_image;
+}
+
+
+QImage PastedSourceItem::originalImageMasked() {
+    return m_orig_image_masked;
+}
+
+void PastedSourceItem::setOriginalImageMasked(QImage img) {
+    m_orig_image_masked = img;
+
+    // Set the diplayed image to this one
+    m_pixmap = QPixmap::fromImage(img);
+
+    // Update the item painter
+    update();
 }
 
 /**
@@ -193,16 +235,8 @@ ImageMatricesRGB PastedSourceItem::originalMatrices() {
     return m_orig_matrices;
 }
 
-/**
- * @brief PastedSourceItem::setOriginalPack
- * @param img_pack
- *
- * This function sets the original image, matrices and masks to the new given one.
- */
-void PastedSourceItem::setOriginalPack(SourceImagePack img_pack) {
-    m_orig_image = img_pack.image;
-    m_orig_matrices = img_pack.matrices;
-    m_masks = img_pack.masks;
+void PastedSourceItem::setOriginalMatrices(ImageMatricesRGB img_mat) {
+    m_orig_matrices = img_mat;
 }
 
 /**
@@ -215,25 +249,14 @@ QImage PastedSourceItem::blendedImage() {
     return m_blended_image;
 }
 
-/**
- * @brief PastedSourceItem::blendedMatrices
- * @return
- *
- * This function returns the blended image in matrices format
- */
-ImageMatricesRGB PastedSourceItem::blendedMatrices() {
-    return m_blended_matrices;
-}
+void PastedSourceItem::setBlendedImage(QImage img) {
+    m_blended_image = img;
 
-/**
- * @brief PastedSourceItem::setBlendedPack
- * @param img_pack
- *
- * This function sets the blended image and matrices to the given one.
- */
-void PastedSourceItem::setBlendedPack(SourceImagePack img_pack) {
-    m_blended_image = img_pack.image;
-    m_blended_matrices = img_pack.matrices;
+    // Set the displayed pixmap to this one
+    m_pixmap = QPixmap::fromImage(img);
+
+    // Update the item painter
+    update();
 }
 
 /**
@@ -246,14 +269,30 @@ SelectMaskMatrices PastedSourceItem::masks() {
     return m_masks;
 }
 
+void PastedSourceItem::setMasks(SelectMaskMatrices masks) {
+    m_masks = masks;
+}
+
 /**
- * @brief PastedSourceItem::getLaplacianMatrix
+ * @brief PastedSourceItem::laplacianMatrix
  * @return
  *
  * This function returns the sparse laplacian matrix
  */
-SparseMatrixXd PastedSourceItem::getLaplacianMatrix() {
+SparseMatrixXd PastedSourceItem::laplacianMatrix() {
     return m_laplacian_matrix;
+}
+
+void PastedSourceItem::setLaplacianMatrix(SparseMatrixXd lapl) {
+    m_laplacian_matrix = lapl;
+}
+
+ImageVectorRGB PastedSourceItem::gradientVectors() {
+    return m_gradient_vectors;
+}
+
+void PastedSourceItem::setGradientVectors(ImageVectorRGB grad_vects) {
+    m_gradient_vectors = grad_vects;
 }
 
 /**
@@ -339,6 +378,13 @@ void PastedSourceItem::setComputing(bool en) {
     else {
         m_prop_anim_wait->stop();
     }
+
+    updateItemControls();
+    update();
+}
+
+void PastedSourceItem::transferFinished() {
+    setComputing(false);
 }
 
 /**
@@ -382,7 +428,7 @@ void PastedSourceItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
         m_is_moving = true;
 
         // Restore the original image on the pixmap
-        m_pixmap = QPixmap::fromImage(m_orig_image);
+        m_pixmap = QPixmap::fromImage(m_orig_image_masked);
     }
 }
 

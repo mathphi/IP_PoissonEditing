@@ -10,6 +10,8 @@ class QGraphicsPixmapItem;
 class SourceGraphicsScene;
 class TargetGraphicsScene;
 
+class ComputationHandler;
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -58,5 +60,7 @@ private:
 
     QImage m_source_image;
     QImage m_target_image;
+
+    ComputationHandler *m_computation_handler;
 };
 #endif // MAINWINDOW_H

@@ -16,7 +16,8 @@ SOURCES += \
     Source/mainwindow.cpp \
     Source/pastedsourceitem.cpp \
     Source/sourcegraphicsscene.cpp \
-    Source/targetgraphicsscene.cpp
+    Source/targetgraphicsscene.cpp \
+    Source/transfercomputationunit.cpp
 
 HEADERS += \
     Source/computationhandler.h \
@@ -25,7 +26,8 @@ HEADERS += \
     Source/mainwindow.h \
     Source/pastedsourceitem.h \
     Source/sourcegraphicsscene.h \
-    Source/targetgraphicsscene.h
+    Source/targetgraphicsscene.h \
+    Source/transfercomputationunit.h
 
 FORMS += \
     UI/mainwindow.ui

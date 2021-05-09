@@ -1,12 +1,27 @@
 #include "computationhandler.h"
+#include "transfercomputationunit.h"
+#include "pastedsourceitem.h"
 
 #include <QImage>
+#include <QThreadPool>
 
 
 ComputationHandler::ComputationHandler(QObject *parent) : QObject(parent)
 {
-
+    m_thread_pool = new QThreadPool(this);
 }
+
+TransferComputationUnit *ComputationHandler::startSourceTransferJob(PastedSourceItem *origin) {
+    // Create and configure the transfer computation unit
+    TransferComputationUnit *tcu = new TransferComputationUnit(origin);
+    tcu->setAutoDelete(true);
+
+    // Add this transfer computation unit to the thread pool queue
+    m_thread_pool->start(tcu);
+
+    return tcu;
+}
+
 
 /**
  * @brief ComputationHandler::imageToMatrices
@@ -58,9 +73,9 @@ QImage ComputationHandler::matricesToImage(ImageMatricesRGB im_rgb) {
         // Set each pixel in the row
         for (int x = 0 ; x < img.width() ; x++) {
             row[x] = qRgb(
-                    im_rgb[0](y,x) * 255,
-                    im_rgb[1](y,x) * 255,
-                    im_rgb[2](y,x) * 255
+                    qBound(0.0, im_rgb[0](y,x) * 255.0, 255.0),
+                    qBound(0.0, im_rgb[1](y,x) * 255.0, 255.0),
+                    qBound(0.0, im_rgb[2](y,x) * 255.0, 255.0)
                 );
         }
     }
@@ -86,9 +101,9 @@ QImage ComputationHandler::matricesToImage(ImageMatricesRGB im_rgb, MatrixXd alp
         // Set each pixel in the row
         for (int x = 0 ; x < img.width() ; x++) {
             row[x] = qRgba(
-                    im_rgb[0](y,x) * 255,
-                    im_rgb[1](y,x) * 255,
-                    im_rgb[2](y,x) * 255,
+                    qBound(0.0, im_rgb[0](y,x) * 255.0, 255.0),
+                    qBound(0.0, im_rgb[1](y,x) * 255.0, 255.0),
+                    qBound(0.0, im_rgb[2](y,x) * 255.0, 255.0),
                     alpha_mask(y,x) * 255
                 );
         }
@@ -131,38 +146,158 @@ SelectMaskMatrices ComputationHandler::selectionToMask(QPainterPath selection_pa
     return smm;
 }
 
-
-SparseMatrixXd ComputationHandler::laplacianMatrix(const QSize img_size) {
+/**
+ * @brief ComputationHandler::laplacianMatrix
+ * @param img_size
+ * @return
+ *
+ * Compute the laplacian for an image of size 'img_size'
+ */
+SparseMatrixXd ComputationHandler::laplacianMatrix(const QSize img_size, SelectMaskMatrices masks) {
     // Compute the fixed dimensions
-    const uint32_t row_size = img_size.width();
-    const uint32_t total_size = img_size.width()*img_size.height();
+    const uint32_t width = img_size.width();
+    const uint32_t height = img_size.height();
+    const uint32_t total_size = width*height;
 
     // Allocate the sparse matrix
     SparseMatrixXd lapl_mat(total_size, total_size);
 
+    // Laplacian index
+    uint32_t idx;
+
     // Allocate the non-zero elements in each row
     lapl_mat.reserve(Eigen::VectorXi::Constant(total_size, 5));
-    for (uint32_t i = 0 ; i < total_size ; i++) {
-        // Diagonal
-        lapl_mat.insert(i,i) = 4.0;
+    for (uint32_t y = 0 ; y < height ; y++) {
+        for (uint32_t x = 0 ; x < width ; x++) {
+            // NOTE: the masks have a 1px margin
+            // Don't care if outside the mask
+            if (masks.positive_mask(y+1,x+1) == 0.0)
+                continue;
 
-        // Neighbour left
-        if (i > 0) {
-            lapl_mat.insert(i,i-1) = -1.0;
-        }
-        // Neighbour right
-        if (i < total_size-1) {
-            lapl_mat.insert(i,i+1) = -1.0;
-        }
-        // Neighbour top
-        if (i > row_size-1) {
-            lapl_mat.insert(i,i-row_size) = -1.0;
-        }
-        // Neighbour bottom
-        if (i < total_size-row_size-1) {
-            lapl_mat.insert(i,i+row_size) = -1.0;
+            // Compute laplacian index
+            idx = y*width + x;
+
+            // Diagonal
+            lapl_mat.insert(idx,idx) = 4.0;
+
+            // Neighbour left
+            if (masks.positive_mask(y+1,x) == 1.0) {
+                lapl_mat.insert(idx,idx-1) = -1.0;
+            }
+            // Neighbour right
+            if (masks.positive_mask(y+1,x+2) == 1.0) {
+                lapl_mat.insert(idx,idx+1) = -1.0;
+            }
+            // Neighbour top
+            if (masks.positive_mask(y,x+1) == 1.0) {
+                lapl_mat.insert(idx,idx-width) = -1.0;
+            }
+            // Neighbour bottom
+            if (masks.positive_mask(y+2,x+1) == 1.0) {
+                lapl_mat.insert(idx,idx+width) = -1.0;
+            }
         }
     }
 
     return lapl_mat;
+}
+
+/**
+ * @brief ComputationHandler::computeImageGradient
+ * @param img_ch
+ * @param masks
+ * @return
+ *
+ * This function computes the gradient vector from the image (sum v_{pq} in reference paper).
+ */
+VectorXd ComputationHandler::computeImageGradient(MatrixXd img_ch, SelectMaskMatrices masks) {
+    // Size of the image (remove the 1px margin)
+    const uint32_t inner_width = img_ch.cols() - 2;
+    const uint32_t inner_height = img_ch.rows() - 2;
+
+    // Column vector length
+    const uint32_t N = inner_width*inner_height;
+    VectorXd grad_vect(N);
+
+    // Initialize the vector to 0
+    grad_vect.setZero();
+
+    // For each pixel p∈Ω -> compute the numerical gradient
+    for (uint32_t y = 1 ; y < inner_height+1 ; y++) {
+        for (uint32_t x = 1 ; x < inner_width+1 ; x++) {
+            // Check if this pixel is in the mask
+            if (masks.positive_mask(y,x) == 0)
+                continue;
+
+            // Compute gradient: v_{pq} = 4*p - sum(N_p)
+            grad_vect((y-1)*inner_width + (x-1)) =
+                    4.0 * img_ch(y,x)
+                    - img_ch(y,x+1) - img_ch(y,x-1)     // Vertical neighbors
+                    - img_ch(y+1,x) - img_ch(y-1,x);    // Horizontal neighbors
+        }
+    }
+
+    return grad_vect;
+}
+
+/**
+ * @brief ComputationHandler::computeBoundaryNeighbors
+ * @param tgt_img_ch
+ * @param masks
+ * @return
+ *
+ * This function computes the sum of the neighbors of each pixel in the mask boundary.
+ */
+VectorXd ComputationHandler::computeBoundaryNeighbors(MatrixXd tgt_img_ch, SelectMaskMatrices masks) {
+    // Size of the image (remove the 1px margin)
+    const uint32_t inner_width = tgt_img_ch.cols() - 2;
+    const uint32_t inner_height = tgt_img_ch.rows() - 2;
+
+    // Column vector length
+    const uint32_t N = inner_width*inner_height;
+    VectorXd bound_vect(N);
+
+    // Initialize the vector to 0
+    bound_vect.setZero();
+
+    // Compute the image masked using the negative mask
+    MatrixXd neg_img_ch = tgt_img_ch.cwiseProduct(masks.negative_mask);
+
+    // For each pixel p∈Ω -> compute the numerical gradient
+    for (uint32_t y = 1 ; y < inner_height+1 ; y++) {
+        for (uint32_t x = 1 ; x < inner_width+1 ; x++) {
+            // Check if this pixel is in the mask
+            if (masks.positive_mask(y,x) == 0)
+                continue;
+
+            // Compute the sum of the neighbors
+            bound_vect((y-1)*inner_width + (x-1)) =
+                    neg_img_ch(y,x+1) + neg_img_ch(y,x-1) +
+                    neg_img_ch(y+1,x) + neg_img_ch(y-1,x);
+        }
+    }
+
+    return bound_vect;
+}
+
+/**
+ * @brief ComputationHandler::vectorToMatrixImage
+ * @param img_vect
+ * @param img_size
+ * @return
+ *
+ * This function reshapes the image vector into an image matrix
+ */
+MatrixXd ComputationHandler::vectorToMatrixImage(VectorXd img_vect, QSize img_size) {
+    // Allocate the image matrix
+    MatrixXd img_mat(img_size.height(), img_size.width());
+
+    // Loop over each pixel and copy it into the matrix
+    for (int32_t y = 0 ; y < img_size.height() ; y++) {
+        for (int32_t x = 0 ; x < img_size.width() ; x++) {
+            img_mat(y,x) = img_vect(y*img_size.width() + x);
+        }
+    }
+
+    return img_mat;
 }
