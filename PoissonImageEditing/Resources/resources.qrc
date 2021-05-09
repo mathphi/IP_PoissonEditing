@@ -5,4 +5,7 @@
     <qresource prefix="/images">
         <file>go-next.svg</file>
     </qresource>
+    <qresource prefix="/texts">
+        <file>about.html</file>
+    </qresource>
 </RCC>

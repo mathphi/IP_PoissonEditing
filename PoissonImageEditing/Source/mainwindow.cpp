@@ -13,6 +13,7 @@
 #include <QImageWriter>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QKeyEvent>
 
 #include <QThread>
 #include <QDebug>
@@ -46,19 +47,32 @@ MainWindow::MainWindow(QWidget *parent)
     m_scene_source->addItem(m_pix_item_source);
     m_scene_target->addItem(m_pix_item_target);
 
-    // Initialise UI component state
-    ui->transferButton->setEnabled(false);
-
     /*
-     * Interface actions connection
+     * Signal/slot connections
      */
+
+    //Interface actions connection
     connect(ui->actionQuit, SIGNAL(triggered(bool)), this, SLOT(close()));
 
     connect(ui->actionOpen_source_image, SIGNAL(triggered(bool)), this, SLOT(openSourceImage()));
     connect(ui->actionOpen_target_image, SIGNAL(triggered(bool)), this, SLOT(openTargetImage()));
 
+    connect(ui->actionDelete_selected_layer, SIGNAL(triggered(bool)), m_scene_target, SLOT(removeSelectedSrcItem()));
+    connect(ui->actionDelete_all_layers,     SIGNAL(triggered(bool)), this,           SLOT(askRemoveAllLayers()));
+
+    connect(ui->actionTransfer_selection, SIGNAL(triggered(bool)), this, SLOT(transferLassoSelection()));
+    connect(ui->transferButton,           SIGNAL(clicked()),       this, SLOT(transferLassoSelection()));
+
+    connect(ui->actionAbout_Qt, SIGNAL(triggered(bool)), this, SLOT(aboutQtDialog()));
+    connect(ui->actionAbout,    SIGNAL(triggered(bool)), this, SLOT(aboutProgramDialog()));
+
+    // Source scene signals
     connect(m_scene_source, SIGNAL(lassoDrawn(QPainterPath)), this, SLOT(sourceLassoDrawn(QPainterPath)));
-    connect(m_scene_source, SIGNAL(lassoRemoved()), this, SLOT(sourceLassoRemoved()));
+    connect(m_scene_source, SIGNAL(lassoRemoved()),           this, SLOT(sourceLassoRemoved()));
+
+    // Target scene signals
+    connect(m_scene_target, SIGNAL(keyPressed(QKeyEvent*)), this, SLOT(targetSceneKeyPressed(QKeyEvent*)));
+    connect(m_scene_target, SIGNAL(selectionChanged()),     this, SLOT(targetSceneSelectionChanged()));
 
     // Drag & drop actions from graphics views
     connect(ui->graphicsViewSource, SIGNAL(imageFileDropped(QString)), this, SLOT(openSourceImage(QString)));
@@ -66,7 +80,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Temp test action
     connect(ui->actionTemp_Test, SIGNAL(triggered(bool)), this, SLOT(tempTestAction()));
-    connect(ui->transferButton, SIGNAL(clicked()), this, SLOT(tempTestAction()));
 }
 
 MainWindow::~MainWindow()
@@ -76,6 +89,34 @@ MainWindow::~MainWindow()
     delete m_pix_item_target;
 }
 
+/**
+ * @brief MainWindow::aboutQtDialog
+ *
+ * This slot opens the "About Qt" dialog
+ */
+void MainWindow::aboutQtDialog() {
+    QMessageBox::aboutQt(this);
+}
+
+/**
+ * @brief MainWindow::aboutProgramDialog
+ *
+ * This slot opens the "About" dialog of the program
+ */
+void MainWindow::aboutProgramDialog() {
+    // Get the about content from a resource file
+    QFile about_file(":/texts/about.html");
+
+    if (!about_file.open(QIODevice::ReadOnly))
+        return;
+
+    QString about_content = about_file.readAll();
+
+    QMessageBox::about(
+                this,
+                "About Poisson Image Blending",
+                about_content);
+}
 
 /**
  * @brief MainWindow::openSourceImage
@@ -161,6 +202,7 @@ void MainWindow::openTargetImage(QString filename) {
     // Enable transfer button if a lasso is already drawn
     if (m_scene_source->isSelectionValid()) {
         ui->transferButton->setEnabled(true);
+        ui->actionTransfer_selection->setEnabled(true);
     }
 }
 
@@ -204,6 +246,7 @@ void MainWindow::sourceLassoDrawn(QPainterPath path) {
 
     if (!m_target_image.isNull()) {
         ui->transferButton->setEnabled(true);
+        ui->actionTransfer_selection->setEnabled(true);
     }
 }
 
@@ -214,6 +257,95 @@ void MainWindow::sourceLassoDrawn(QPainterPath path) {
  */
 void MainWindow::sourceLassoRemoved() {
     ui->transferButton->setEnabled(false);
+    ui->actionTransfer_selection->setEnabled(false);
+}
+
+/**
+ * @brief MainWindow::targetSceneKeyPressed
+ * @param event
+ *
+ * This slot is called when the target scene receives a key event.
+ */
+void MainWindow::targetSceneKeyPressed(QKeyEvent *event) {
+    switch (event->key()) {
+    case Qt::Key_Escape: {
+        // Escape -> deselect all items
+        m_scene_target->clearSelection();
+        m_scene_target->clearFocus();
+        break;
+    }
+    case Qt::Key_Delete: {
+        if (event->modifiers() & Qt::ControlModifier) {
+            // Delete with control key
+            // -> remove all the pasted items (ask before)
+            askRemoveAllLayers();
+        }
+        else {
+            // Delete without control key
+            // -> remove the selected item (if one)
+            m_scene_target->removeSelectedSrcItem();
+        }
+        break;
+    }
+    case Qt::Key_F5: {
+        //TODO: recompute selected/all pasted sources (?)
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+/**
+ * @brief MainWindow::targetSceneSelectionChanged
+ *
+ * This slot is called by the scene when the item selection changed.
+ */
+void MainWindow::targetSceneSelectionChanged() {
+    // Get the number of selected items
+    int selection_count = m_scene_target->selectedItems().size();
+
+    // These actions are enabled only if an item is selected
+    ui->actionDelete_selected_layer->setEnabled(selection_count > 0);
+    ui->actionRecompute_selected_layer->setEnabled(selection_count > 0);
+}
+
+/**
+ * @brief MainWindow::askRemoveAllLayers
+ *
+ * This slot asks before removing all pasted layers from the target scene.
+ */
+void MainWindow::askRemoveAllLayers() {
+    int ans = QMessageBox::warning(
+                this,
+                "Delete confirmation",
+                "This will delete the all the pasted items.\nAre you sure you want to continue ?",
+                QMessageBox::Yes | QMessageBox::No,
+                QMessageBox::No);
+
+    // Remove all if the answer is yes
+    if (ans == QMessageBox::Yes) {
+        m_scene_target->removeAllSrcItem();
+    }
+}
+
+/**
+ * @brief MainWindow::transferLassoSelection
+ *
+ * This slot transfers the selection from the source to the target scene.
+ */
+void MainWindow::transferLassoSelection() {
+    // Abort if there is no valid selection
+    if (!m_scene_source->isSelectionValid())
+        return;
+
+    // Abort if the target is not ready
+    if (m_target_image.isNull())
+        return;
+
+
+    tempTestAction();
+
 }
 
 /**

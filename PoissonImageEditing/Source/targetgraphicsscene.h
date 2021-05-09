@@ -7,6 +7,8 @@ class PastedSourceItem;
 
 class TargetGraphicsScene : public QGraphicsScene
 {
+    Q_OBJECT
+
 public:
     TargetGraphicsScene(QObject *parent = nullptr);
     ~TargetGraphicsScene();
@@ -16,13 +18,17 @@ public:
 
     bool isRectangleInsertable(QRectF rect);
 
-protected:
-    virtual void keyPressEvent(QKeyEvent *event) override;
-
-private:
+public slots:
     void removeSelectedSrcItem();
     void removeAllSrcItem();
 
+protected:
+    virtual void keyPressEvent(QKeyEvent *event) override;
+
+signals:
+    void keyPressed(QKeyEvent*);
+
+private:
     QList<PastedSourceItem*> m_source_item_list;
 };
 

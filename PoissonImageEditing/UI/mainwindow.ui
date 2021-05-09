@@ -28,6 +28,9 @@
     </item>
     <item>
      <widget class="QToolButton" name="transferButton">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
       <property name="sizePolicy">
        <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
         <horstretch>0</horstretch>
@@ -78,9 +81,33 @@
      <string>Edit</string>
     </property>
     <addaction name="actionTemp_Test"/>
+    <addaction name="separator"/>
+    <addaction name="actionTransfer_selection"/>
+    <addaction name="separator"/>
+    <addaction name="actionDelete_selected_layer"/>
+    <addaction name="actionDelete_all_layers"/>
+   </widget>
+   <widget class="QMenu" name="menuBlending">
+    <property name="title">
+     <string>Blending</string>
+    </property>
+    <addaction name="actionMixed_blending"/>
+    <addaction name="actionReal_time_blending"/>
+    <addaction name="separator"/>
+    <addaction name="actionRecompute_selected_layer"/>
+    <addaction name="actionRecompute_all_layers"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout_Qt"/>
+    <addaction name="actionAbout"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
+   <addaction name="menuBlending"/>
+   <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
@@ -133,6 +160,78 @@
   <action name="actionTemp_Test">
    <property name="text">
     <string>Temp Test</string>
+   </property>
+  </action>
+  <action name="actionDelete_all_layers">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Delete all pasted layers</string>
+   </property>
+  </action>
+  <action name="actionDelete_selected_layer">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Delete selected layer</string>
+   </property>
+  </action>
+  <action name="actionTransfer_selection">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Transfer selection</string>
+   </property>
+  </action>
+  <action name="actionReal_time_blending">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Real-time blending</string>
+   </property>
+  </action>
+  <action name="actionMixed_blending">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Mixed blending</string>
+   </property>
+  </action>
+  <action name="actionRecompute_all_layers">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Recompute all pasted layers</string>
+   </property>
+  </action>
+  <action name="actionRecompute_selected_layer">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Recompute selected layer</string>
+   </property>
+  </action>
+  <action name="actionAbout_Qt">
+   <property name="text">
+    <string>About Qt...</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About...</string>
    </property>
   </action>
  </widget>

@@ -116,42 +116,12 @@ void TargetGraphicsScene::removeAllSrcItem() {
     }
 }
 
+/**
+ * @brief TargetGraphicsScene::keyPressEvent
+ * @param event
+ *
+ * The key press event is redirected to the keyPressed() signal
+ */
 void TargetGraphicsScene::keyPressEvent(QKeyEvent *event) {
-    switch (event->key()) {
-    case Qt::Key_Escape: {
-        // Escape -> deselect all items
-        clearSelection();
-        clearFocus();
-        break;
-    }
-    case Qt::Key_Delete: {
-        if (event->modifiers() & Qt::ControlModifier) {
-            // Delete with control key
-            // -> remove all the pasted items
-            int ans = QMessageBox::warning(
-                        NULL,
-                        "Delete confirmation",
-                        "This will delete the all the pasted items.\nAre you sure you want to continue ?",
-                        QMessageBox::Yes | QMessageBox::No,
-                        QMessageBox::No);
-
-            // Remove all if the answer is yes
-            if (ans == QMessageBox::Yes) {
-                removeAllSrcItem();
-            }
-        }
-        else {
-            // Delete without control key
-            // -> remove the selected item (if one)
-            removeSelectedSrcItem();
-        }
-        break;
-    }
-    case Qt::Key_F5: {
-        //TODO: recompute selected/all pasted sources (?)
-        break;
-    }
-    default:
-        break;
-    }
+    emit keyPressed(event);
 }
