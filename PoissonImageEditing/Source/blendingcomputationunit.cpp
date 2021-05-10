@@ -32,18 +32,17 @@ void BlendingComputationUnit::run() {
 
 void BlendingComputationUnit::computeBlendingData() {
     // Convert the target image into matrices
-    //TODO: create a conversion function for a specific channel
-    ImageMatricesRGB tgt_matrices = ComputationHandler::imageToMatrices(m_target_img);
+    MatrixXd tgt_matrix_ch = ComputationHandler::imageToChannelMatrix(m_target_img, m_channel_num);
 
     // Compute the boundary conditions with the target image
-    VectorXd bound = ComputationHandler::computeBoundaryNeighbors(tgt_matrices[m_channel_num], m_masks);
+    VectorXd bound = ComputationHandler::computeBoundaryNeighbors(tgt_matrix_ch, m_masks);
 
     // Gradient vector
     VectorXd grad;
 
     // If mixed blending -> also compute the target gradient then mix them
     if (m_mixed_blending) {
-        grad = ComputationHandler::computeImageGradientMixed(tgt_matrices[m_channel_num], m_src_grad, m_masks);
+        grad = ComputationHandler::computeImageGradientMixed(tgt_matrix_ch, m_src_grad, m_masks);
     }
     else {
         grad = m_src_grad;

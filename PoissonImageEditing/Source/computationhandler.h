@@ -42,6 +42,7 @@ public:
     void startComputationJob(QRunnable *cu);
 
     static ImageMatricesRGB imageToMatrices(QImage img);
+    static MatrixXd imageToChannelMatrix(QImage img, int channel);
     static QImage matricesToImage(ImageMatricesRGB im_rgb);
     static QImage matricesToImage(ImageMatricesRGB im_rgb, MatrixXd alpha_mask);
     static MatrixXd vectorToMatrixImage(VectorXd img_vect, QSize img_size);

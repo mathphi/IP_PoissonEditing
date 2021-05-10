@@ -22,6 +22,9 @@ public slots:
     void removeSelectedSrcItem();
     void removeAllSrcItem();
 
+    void recomputeBlendingSelected();
+    void recomputeBlendingAll();
+
     void changeRealTimeBlending(bool en);
     void changeMixedBlending(bool en);
 
@@ -30,6 +33,7 @@ protected:
 
 signals:
     void keyPressed(QKeyEvent*);
+    void sourceItemListChanged();
 
 private:
     QList<PastedSourceItem*> m_source_item_list;

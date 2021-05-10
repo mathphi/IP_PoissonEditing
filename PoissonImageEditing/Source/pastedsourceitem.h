@@ -43,6 +43,7 @@ public:
     bool isMoving();
     void setSelected(bool s);
     void updateItemControls();
+    void invalidateBlending();
 
     bool isComputing();
     void setComputing(bool en);
@@ -64,9 +65,6 @@ protected:
     virtual void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
-
-    virtual void focusInEvent(QFocusEvent *focusEvent) override;
-    virtual void focusOutEvent(QFocusEvent *focusEvent) override;
 
     virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 

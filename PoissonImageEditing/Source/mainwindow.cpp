@@ -68,14 +68,18 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionOpen_source_image, SIGNAL(triggered(bool)), this, SLOT(openSourceImage()));
     connect(ui->actionOpen_target_image, SIGNAL(triggered(bool)), this, SLOT(openTargetImage()));
 
-    connect(ui->actionDelete_selected_layer, SIGNAL(triggered(bool)), m_scene_target, SLOT(removeSelectedSrcItem()));
-    connect(ui->actionDelete_all_layers,     SIGNAL(triggered(bool)), this,           SLOT(askRemoveAllLayers()));
-
+    connect(ui->actionClear_selection,    SIGNAL(triggered(bool)), this, SLOT(clearLassoSelection()));
     connect(ui->actionTransfer_selection, SIGNAL(triggered(bool)), this, SLOT(transferLassoSelection()));
     connect(ui->transferButton,           SIGNAL(clicked()),       this, SLOT(transferLassoSelection()));
 
+    connect(ui->actionDelete_selected_layer, SIGNAL(triggered(bool)), m_scene_target, SLOT(removeSelectedSrcItem()));
+    connect(ui->actionDelete_all_layers,     SIGNAL(triggered(bool)), this,           SLOT(askRemoveAllLayers()));
+
     connect(ui->actionReal_time_blending, SIGNAL(toggled(bool)), m_scene_target, SLOT(changeRealTimeBlending(bool)));
     connect(ui->actionMixed_blending,     SIGNAL(toggled(bool)), m_scene_target, SLOT(changeMixedBlending(bool)));
+
+    connect(ui->actionRecompute_selected_layer, SIGNAL(triggered(bool)), m_scene_target, SLOT(recomputeBlendingSelected()));
+    connect(ui->actionRecompute_all_layers,     SIGNAL(triggered(bool)), m_scene_target, SLOT(recomputeBlendingAll()));
 
     connect(ui->actionAbout_Qt, SIGNAL(triggered(bool)), this, SLOT(aboutQtDialog()));
     connect(ui->actionAbout,    SIGNAL(triggered(bool)), this, SLOT(aboutProgramDialog()));
@@ -85,15 +89,13 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_scene_source, SIGNAL(lassoRemoved()),           this, SLOT(sourceLassoRemoved()));
 
     // Target scene signals
-    connect(m_scene_target, SIGNAL(keyPressed(QKeyEvent*)), this, SLOT(targetSceneKeyPressed(QKeyEvent*)));
-    connect(m_scene_target, SIGNAL(selectionChanged()),     this, SLOT(targetSceneSelectionChanged()));
+    connect(m_scene_target, SIGNAL(keyPressed(QKeyEvent*)),  this, SLOT(targetSceneKeyPressed(QKeyEvent*)));
+    connect(m_scene_target, SIGNAL(selectionChanged()),      this, SLOT(targetSceneSelectionChanged()));
+    connect(m_scene_target, SIGNAL(sourceItemListChanged()), this, SLOT(pastedItemListChanged()));
 
     // Drag & drop actions from graphics views
     connect(ui->graphicsViewSource, SIGNAL(imageFileDropped(QString)), this, SLOT(openSourceImage(QString)));
     connect(ui->graphicsViewTarget, SIGNAL(imageFileDropped(QString)), this, SLOT(openTargetImage(QString)));
-
-    // Temp test action
-    connect(ui->actionTemp_Test, SIGNAL(triggered(bool)), this, SLOT(tempTestAction()));
 }
 
 MainWindow::~MainWindow()
@@ -258,6 +260,8 @@ void MainWindow::updateTargetScene() {
 void MainWindow::sourceLassoDrawn(QPainterPath path) {
     Q_UNUSED(path);
 
+    ui->actionClear_selection->setEnabled(true);
+
     if (!m_target_image.isNull()) {
         ui->transferButton->setEnabled(true);
         ui->actionTransfer_selection->setEnabled(true);
@@ -276,7 +280,17 @@ void MainWindow::sourceLassoDrawn(QPainterPath path) {
 void MainWindow::sourceLassoRemoved() {
     ui->transferButton->setEnabled(false);
     ui->actionTransfer_selection->setEnabled(false);
+    ui->actionClear_selection->setEnabled(false);
     m_label_size->clear();
+}
+
+/**
+ * @brief MainWindow::clearLassoSelection
+ *
+ * This slot clears the lasso selection
+ */
+void MainWindow::clearLassoSelection() {
+    m_scene_source->removeLasso();
 }
 
 /**
@@ -307,7 +321,16 @@ void MainWindow::targetSceneKeyPressed(QKeyEvent *event) {
         break;
     }
     case Qt::Key_F5: {
-        //TODO: recompute selected/all pasted sources (?)
+        if (event->modifiers() & Qt::ControlModifier) {
+            // F5 with control key
+            // -> recompute all the pasted items
+            m_scene_target->recomputeBlendingAll();
+        }
+        else {
+            // F5 without control key
+            // -> recompute the selected item (if one)
+            m_scene_target->recomputeBlendingSelected();
+        }
         break;
     }
     default:
@@ -327,6 +350,20 @@ void MainWindow::targetSceneSelectionChanged() {
     // These actions are enabled only if an item is selected
     ui->actionDelete_selected_layer->setEnabled(selection_count > 0);
     ui->actionRecompute_selected_layer->setEnabled(selection_count > 0);
+}
+
+/**
+ * @brief MainWindow::pastedItemListChanged
+ *
+ * This slot is called by the scene when the number of pasted items changes.
+ */
+void MainWindow::pastedItemListChanged() {
+    // Get the number of pasted items
+    int items_count = m_scene_target->getSourceItemList().size();
+
+    // These actions are enabled only if at least an item has been pasted
+    ui->actionDelete_all_layers->setEnabled(items_count > 0);
+    ui->actionRecompute_all_layers->setEnabled(items_count > 0);
 }
 
 /**
@@ -394,223 +431,3 @@ void MainWindow::transferLassoSelection() {
     m_scene_target->addSourceItem(src_item);
 }
 
-/**
- * @brief MainWindow::tempTestAction
- *
- * This function is a temporary function used for development
- */
-void MainWindow::tempTestAction() {
-    if (!m_scene_source->isSelectionValid())
-        return;
-
-    QRect select_rect = m_scene_source->getSelectionPath().boundingRect().toAlignedRect();
-    select_rect.adjust(-1, -1, 1, 1);
-
-    QImage img_part = m_source_image.copy(select_rect);
-
-    qDebug() << "Selection bounding rect:" << select_rect;
-
-    QElapsedTimer e_t;
-    e_t.start();
-
-    ImageMatricesRGB img_matrices = ComputationHandler::imageToMatrices(img_part);
-
-    qDebug() << "Conversion duration:" << e_t.nsecsElapsed() << "ns";
-
-    qDebug() << "red:" << img_matrices[0](0,0)
-             << "\tgreen:" << img_matrices[1](0,0)
-             << "\tblue:" << img_matrices[2](0,0);
-
-/*
-    e_t.restart();
-
-    SparseMatrixXd mat_test(1000000,1000000);
-
-    qDebug() << "Allocation duration:" << e_t.nsecsElapsed() << "ns";
-    e_t.restart();
-
-    mat_test.setIdentity();
-
-    qDebug() << "Identity duration:" << e_t.nsecsElapsed() << "ns";
-    e_t.restart();
-
-    mat_test = mat_test * 4;
-
-    qDebug() << "Scalar multiply duration:" << e_t.nsecsElapsed() << "ns";
-    e_t.restart();
-
-    float coeff = mat_test.coeff(0,0);
-
-    qDebug() << "Lookup duration:" << e_t.nsecsElapsed() << "ns";
-
-    qDebug() << mat_test.rows() << mat_test.cols() << coeff;
-
-
-    SparseMatrixXd mat_test2(1000000,1000000);
-
-    e_t.restart();
-
-    mat_test2.reserve(Eigen::VectorXi::Constant(mat_test.cols(),5));
-    for (int i = 0 ; i < mat_test.cols() ; i++) {
-        mat_test2.insert(i,i) = 4.0;
-
-        if (i > 0) {
-            mat_test2.insert(i,i-1) = -1.0;
-        }
-        if (i < 1000000-1) {
-            mat_test2.insert(i,i+1) = -1.0;
-        }
-        if (i > 1000-1) {
-            mat_test2.insert(i,i-1000) = -1.0;
-        }
-        if (i < 1000000-1000-1) {
-            mat_test2.insert(i,i+1000) = -1.0;
-        }
-    }
-
-    qDebug() << "Insertion duration:" << e_t.nsecsElapsed() << "ns";
-
-    qDebug() << mat_test2.nonZeros() << mat_test2.coeff(0,0);
-
-*/
-    e_t.restart();
-/*
-    SelectMaskMatrices smm = ComputationHandler::selectionToMask(m_scene_source->getSelectionPath());
-
-    qDebug() << "Mask generation duration:" << e_t.nsecsElapsed() << "ns";
-    e_t.restart();
-
-    ImageMatricesRGB result;
-    result[0] = img_matrices[0].cwiseProduct(smm.positive_mask);
-    result[1] = img_matrices[1].cwiseProduct(smm.positive_mask);
-    result[2] = img_matrices[2].cwiseProduct(smm.positive_mask);
-
-    qDebug() << "Elementwise product duration:" << e_t.nsecsElapsed() << "ns";
-
-    QImage img = ComputationHandler::matricesToImage(result, smm.positive_mask);
-
-
-    e_t.restart();
-
-    // Remove 2px (1px margin top/bottom; right/left)
-    SparseMatrixXd laplacian_mat = ComputationHandler::laplacianMatrix(img_part.size() - QSize(2,2), smm);
-
-    qDebug() << "Laplacian generation duration:" << e_t.nsecsElapsed() << "ns";
-    qDebug() << "Size:" << laplacian_mat.rows() << "x" << laplacian_mat.cols();
-    qDebug() << "NNZ:" << laplacian_mat.nonZeros();
-
-
-    if (!m_scene_target->isRectangleInsertable(img.rect())) {
-        QMessageBox::critical(
-                    NULL,
-                    "Oversized source",
-                    "The source item you are trying to paste is larger than the target.\n"
-                    "Try again with a smaller source or a larger target.");
-    }
-    else {
-        // Prepare the Source Image Pack for the item
-        SourceImagePack img_pack;
-        img_pack.image = img;
-        img_pack.matrices = img_matrices;
-        img_pack.masks = smm;
-
-        // Normalize the selection path to its bounding rect (with 1px margin)
-        QPainterPath p = m_scene_source->getSelectionPath();
-        p.translate(-p.boundingRect().topLeft()
-                    + QPointF((img.width() - p.boundingRect().width()) / 2.0, (img.height() - p.boundingRect().height()) / 2.0)
-                    + QPointF(0.5,0.5));
-        // pixel alignment margin + 0.5 to align the selection path on the center of the pixel
-
-        // Create the Pasted Source Item
-        PastedSourceItem *src_item = new PastedSourceItem(img_pack, laplacian_mat, p);
-
-        m_scene_target->addSourceItem(src_item);
-
-        e_t.restart();
-
-        VectorXd grad_r = ComputationHandler::computeImageGradient(img_matrices[0], smm);
-        VectorXd grad_g = ComputationHandler::computeImageGradient(img_matrices[1], smm);
-        VectorXd grad_b = ComputationHandler::computeImageGradient(img_matrices[2], smm);
-
-        qDebug() << "Gradient computation duration:" << e_t.nsecsElapsed() << "ns";
-        e_t.restart();
-
-        QRect copy_rect(src_item->pos().toPoint(), src_item->boundingRect().size().toSize());
-        QImage tgt_img = m_target_image.copy(copy_rect);
-        ImageMatricesRGB tgt_matrices = ComputationHandler::imageToMatrices(tgt_img);
-
-        qDebug() << "Target image extraction duration:" << e_t.nsecsElapsed() << "ns";
-        e_t.restart();
-
-        VectorXd bound_r = ComputationHandler::computeBoundaryNeighbors(tgt_matrices[0], smm);
-        VectorXd bound_g = ComputationHandler::computeBoundaryNeighbors(tgt_matrices[1], smm);
-        VectorXd bound_b = ComputationHandler::computeBoundaryNeighbors(tgt_matrices[2], smm);
-
-        qDebug() << "Boundaries computation duration:" << e_t.nsecsElapsed() << "ns";
-        e_t.restart();
-
-        VectorXd b_r = grad_r + bound_r;
-        VectorXd b_g = grad_g + bound_g;
-        VectorXd b_b = grad_b + bound_b;
-
-        qDebug() << "B vector sum duration:" << e_t.nsecsElapsed() << "ns";
-        e_t.restart();
-
-        Eigen::ConjugateGradient<Eigen::SparseMatrix<float>> solver;
-        solver.analyzePattern(laplacian_mat);
-        solver.factorize(laplacian_mat);
-
-        qDebug() << "Solver init. duration:" << e_t.nsecsElapsed() << "ns";
-        e_t.restart();
-
-        VectorXd x_r = solver.solve(b_r);
-
-        qDebug() << "Solved: red";
-
-        VectorXd x_g = solver.solve(b_g);
-
-        qDebug() << "Solved: green";
-
-        VectorXd x_b = solver.solve(b_b);
-
-        qDebug() << "Solved: blue";
-
-        qDebug() << "Solving duration:" << e_t.nsecsElapsed() << "ns";
-        e_t.restart();
-
-        MatrixXd x_mat_r = ComputationHandler::vectorToMatrixImage(x_r, img_part.size() - QSize(2,2));
-        MatrixXd x_mat_g = ComputationHandler::vectorToMatrixImage(x_g, img_part.size() - QSize(2,2));
-        MatrixXd x_mat_b = ComputationHandler::vectorToMatrixImage(x_b, img_part.size() - QSize(2,2));
-
-        qDebug() << "Reshape duration:" << e_t.nsecsElapsed() << "ns";
-        e_t.restart();
-
-        MatrixXd x_mat_r_outer(img_part.height(), img_part.width());
-        MatrixXd x_mat_g_outer(img_part.height(), img_part.width());
-        MatrixXd x_mat_b_outer(img_part.height(), img_part.width());
-
-        x_mat_r_outer.block(1, 1, x_mat_r.rows(), x_mat_r.cols()) = x_mat_r;
-        x_mat_g_outer.block(1, 1, x_mat_g.rows(), x_mat_g.cols()) = x_mat_g;
-        x_mat_b_outer.block(1, 1, x_mat_b.rows(), x_mat_b.cols()) = x_mat_b;
-
-        qDebug() << "Block operation duration:" << e_t.nsecsElapsed() << "ns";
-        e_t.restart();
-
-        ImageMatricesRGB x_mat = {
-            x_mat_r_outer,
-            x_mat_g_outer,
-            x_mat_b_outer,
-        };
-
-        QImage x_img = ComputationHandler::matricesToImage(x_mat, smm.positive_mask);
-
-        qDebug() << "Matrix to image duration:" << e_t.nsecsElapsed() << "ns";
-
-        SourceImagePack sip;
-        sip.image = x_img;
-        sip.matrices = x_mat;
-        sip.masks = smm;
-
-        src_item->setBlendedPack(sip);
-    }*/
-}
