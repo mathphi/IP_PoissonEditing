@@ -1,5 +1,6 @@
 #include "pastedsourceitem.h"
 #include "transfercomputationunit.h"
+#include "blendingcomputationunit.h"
 
 #include <QGraphicsSceneMouseEvent>
 #include <QPropertyAnimation>
@@ -18,15 +19,24 @@
 #define ANIM_INTERVAL   250   // ms
 
 
-PastedSourceItem::PastedSourceItem(QImage src_img,
+PastedSourceItem::PastedSourceItem(
+        QImage src_img,
         QPainterPath selection_path,
+        QImage target_image,
         ComputationHandler *ch_ptr,
         QGraphicsItem *parent)
     : QGraphicsObject(parent)
 {
+    // Blending settings
+    m_is_real_time = true;
+    m_is_mixed_blending = true;
+
     // Save the pointer to the computation handler
     m_computation_hander = ch_ptr;
     m_transfer_job = nullptr;
+
+    // Save the link to target image
+    m_target_image = target_image;
 
     // Save the source image
     m_orig_image = src_img;
@@ -96,13 +106,12 @@ PastedSourceItem::PastedSourceItem(QImage src_img,
 
     // Create and configure the transfer computation unit
     m_transfer_job = new TransferComputationUnit(m_orig_image, m_selection_path);
-    m_transfer_job->setAutoDelete(false);
 
     // Connect the transfer job signal
     connect(m_transfer_job, SIGNAL(computationFinished()), this, SLOT(transferFinished()));
 
     // Send the transfer job to the computation handler
-    m_computation_hander->startSourceTransferJob(m_transfer_job);
+    m_computation_hander->startComputationJob(m_transfer_job);
 }
 
 PastedSourceItem::~PastedSourceItem() {
@@ -359,6 +368,46 @@ void PastedSourceItem::setComputing(bool en) {
 }
 
 /**
+ * @brief PastedSourceItem::isRealTime
+ * @return
+ *
+ * This funciton returns true if this item computes the blending in real time
+ */
+bool PastedSourceItem::isRealTime() {
+    return m_is_real_time;
+}
+
+/**
+ * @brief PastedSourceItem::setRealTime
+ * @param en
+ *
+ * This function enables/disables the real time blending
+ */
+void PastedSourceItem::setRealTime(bool en) {
+    m_is_real_time = en;
+}
+
+/**
+ * @brief PastedSourceItem::isMixedBlending
+ * @return
+ *
+ * This function returns true if mixed blending is enabled
+ */
+bool PastedSourceItem::isMixedBlending() {
+    return m_is_mixed_blending;
+}
+
+/**
+ * @brief PastedSourceItem::setMixedBlending
+ * @param en
+ *
+ * This function enables/disables the mixed blending
+ */
+void PastedSourceItem::setMixedBlending(bool en) {
+    m_is_mixed_blending = en;
+}
+
+/**
  * @brief PastedSourceItem::waitAnimColor
  * @return
  *
@@ -383,6 +432,52 @@ void PastedSourceItem::setWaitAnimColor(QColor color) {
 }
 
 /**
+ * @brief PastedSourceItem::startBlendingComputation
+ *
+ * This function starts a new blending job (threaded)
+ */
+void PastedSourceItem::startBlendingComputation() {
+    // Check if a blending job is already running
+    if (m_blending_unit_list.size() > 0)
+        return;
+
+    // Enable computing state
+    setComputing(true);
+
+    // Get the interesting part of the target image
+    QRect copy_rect(pos().toPoint(), boundingRect().size().toSize());
+    QImage target_image_part = m_target_image.copy(copy_rect);
+
+    // For each color channel
+    for (int i = 0 ; i < 3 ; i++) {
+        // Create the computation unit
+        BlendingComputationUnit *bcu = new BlendingComputationUnit(
+                    i,
+                    target_image_part,
+                    m_gradient_vectors[i],
+                    m_masks,
+                    m_laplacian_matrix,
+                    m_is_mixed_blending);
+
+        // Connect the computation unit to the slot
+        connect(bcu, SIGNAL(computationFinished()), this, SLOT(blendingFinished()));
+
+        // Lock the blending unit list
+        m_blending_mutex.lock();
+
+        // Add this computation unit to the control list
+        m_blending_unit_list.append(bcu);
+
+        // Unlock the blending unit list
+        m_blending_mutex.unlock();
+
+        //Add the computation unit to the thread pool queue
+        m_computation_hander->startComputationJob(bcu);
+    }
+}
+
+
+/**
  * @brief PastedSourceItem::transferFinished
  *
  * This slot is called when the Transfer job thread finished computing
@@ -405,6 +500,51 @@ void PastedSourceItem::transferFinished() {
 
     // Set computing as finished
     setComputing(false);
+}
+
+
+/**
+ * @brief PastedSourceItem::blendingFinished
+ *
+ * This slot is called by the blending computation units when
+ * the computation is finished
+ */
+void PastedSourceItem::blendingFinished() {
+    // Retrive the sender of the computationFinished signal
+    BlendingComputationUnit *bcu = qobject_cast<BlendingComputationUnit*> (sender());
+
+    // If the sender was not found -> abort
+    if (!bcu)
+        return;
+
+    // Thead-lock this section
+    m_blending_mutex.lock();
+
+    // Retreive the computation unit's channel number
+    int channel = bcu->getChannelNumber();
+
+    // Save the blended matrix for this channel
+    m_blended_matrices[channel] = bcu->getBlendedChannel();
+
+    // Remove this computation unit from the list
+    m_blending_unit_list.removeAll(bcu);
+
+    // Check if the blending if finished for all channels
+    if (m_blending_unit_list.size() == 0) {
+        // BLENDING FINISHED ! //
+
+        // Convert the blended matrices to a QImage
+        m_blended_image = ComputationHandler::matricesToImage(m_blended_matrices, m_masks.positive_mask);
+
+        // Update the graphics
+        m_pixmap = QPixmap::fromImage(m_blended_image);
+
+        // Exit the computing state
+        setComputing(false);
+    }
+
+    // Unlock this section
+    m_blending_mutex.unlock();
 }
 
 
@@ -436,13 +576,21 @@ void PastedSourceItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
     if (isMoving()) {
         m_is_moving = false;
 
-        qDebug() << "Moving done";
-        //TODO: here, the item has been placed at another position
-        //      -> recompute the image
+        // If real time is enabled -> start blending when item released
+        if (m_is_real_time) {
+            startBlendingComputation();
+        }
     }
 
     // Update item controls (enable moving)
     updateItemControls();
+}
+
+void PastedSourceItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) {
+    QGraphicsItem::mouseDoubleClickEvent(event);
+
+    // Start blending is double clicked
+    startBlendingComputation();
 }
 
 void PastedSourceItem::focusInEvent(QFocusEvent *focusEvent) {

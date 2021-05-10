@@ -1,6 +1,7 @@
 #ifndef PASTEDSOURCEITEM_H
 #define PASTEDSOURCEITEM_H
 
+#include <QMutex>
 #include <QImage>
 #include <QPainterPath>
 #include <QGraphicsObject>
@@ -16,6 +17,7 @@ class PastedSourceItem : public QGraphicsObject
 public:
     PastedSourceItem(QImage src_img,
                      QPainterPath selection_path,
+                     QImage target_image,
                      ComputationHandler *ch_ptr,
                      QGraphicsItem *parent = nullptr);
     ~PastedSourceItem();
@@ -45,13 +47,23 @@ public:
     bool isComputing();
     void setComputing(bool en);
 
+    bool isRealTime();
+    void setRealTime(bool en);
+
+    bool isMixedBlending();
+    void setMixedBlending(bool en);
+
+    void startBlendingComputation();
+
 public slots:
     void transferFinished();
+    void blendingFinished();
 
 protected:
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     virtual void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
+    virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
 
     virtual void focusInEvent(QFocusEvent *focusEvent) override;
     virtual void focusOutEvent(QFocusEvent *focusEvent) override;
@@ -66,12 +78,16 @@ private:
     QColor waitAnimColor();
     void setWaitAnimColor(QColor color);
 
+    // Link to the whole target image
+    QImage m_target_image;
+
     // Original/blended image data
     QImage m_orig_image;
     QImage m_orig_image_masked;
     ImageMatricesRGB m_orig_matrices;
 
     QImage m_blended_image;
+    ImageMatricesRGB m_blended_matrices;
 
     SelectMaskMatrices m_masks;
     SparseMatrixXd m_laplacian_matrix;
@@ -95,9 +111,19 @@ private:
     bool m_is_moving;
     bool m_is_computing;
 
+    // Blending attributes
+    bool m_is_real_time;
+    bool m_is_mixed_blending;
+
+    // Transfer computation attributes
+    TransferComputationUnit *m_transfer_job;
+
+    // Blending management attributes
+    QList<BlendingComputationUnit*> m_blending_unit_list;
+    QMutex m_blending_mutex;
+
     // Pointer to the computation handler
     ComputationHandler *m_computation_hander;
-    TransferComputationUnit *m_transfer_job;
 };
 
 #endif // PASTEDSOURCEITEM_H

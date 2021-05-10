@@ -26,9 +26,11 @@ struct SelectMaskMatrices {
 };
 
 
+class QRunnable;
 class QThreadPool;
 class PastedSourceItem;
 class TransferComputationUnit;
+class BlendingComputationUnit;
 
 class ComputationHandler : public QObject
 {
@@ -37,7 +39,7 @@ class ComputationHandler : public QObject
 public:
     explicit ComputationHandler(QObject *parent = nullptr);
 
-    void startSourceTransferJob(TransferComputationUnit *tcu);
+    void startComputationJob(QRunnable *cu);
 
 
     static ImageMatricesRGB imageToMatrices(QImage img);

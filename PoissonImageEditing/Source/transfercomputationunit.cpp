@@ -7,6 +7,8 @@ TransferComputationUnit::TransferComputationUnit(QImage source_image, QPainterPa
 {
     m_source_image = source_image;
     m_selection_path = selection_path;
+
+    setAutoDelete(false);
 }
 
 void TransferComputationUnit::run() {

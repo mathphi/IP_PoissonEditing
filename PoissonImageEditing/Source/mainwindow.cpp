@@ -66,6 +66,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionTransfer_selection, SIGNAL(triggered(bool)), this, SLOT(transferLassoSelection()));
     connect(ui->transferButton,           SIGNAL(clicked()),       this, SLOT(transferLassoSelection()));
 
+    connect(ui->actionReal_time_blending, SIGNAL(toggled(bool)), m_scene_target, SLOT(changeRealTimeBlending(bool)));
+
     connect(ui->actionAbout_Qt, SIGNAL(triggered(bool)), this, SLOT(aboutQtDialog()));
     connect(ui->actionAbout,    SIGNAL(triggered(bool)), this, SLOT(aboutProgramDialog()));
 
@@ -370,7 +372,11 @@ void MainWindow::transferLassoSelection() {
     QPainterPath path = m_scene_source->getSelectionPath();
 
     // Create the Pasted Source Item
-    PastedSourceItem *src_item = new PastedSourceItem(src_img_part, path, m_computation_handler);
+    PastedSourceItem *src_item = new PastedSourceItem(src_img_part, path, m_target_image, m_computation_handler);
+    src_item->setRealTime(ui->actionReal_time_blending->isChecked());
+    src_item->setMixedBlending(ui->actionMixed_blending->isChecked());
+
+    // Add the source item to the target scene
     m_scene_target->addSourceItem(src_item);
 }
 

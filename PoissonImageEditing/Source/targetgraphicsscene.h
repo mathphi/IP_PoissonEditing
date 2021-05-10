@@ -22,6 +22,8 @@ public slots:
     void removeSelectedSrcItem();
     void removeAllSrcItem();
 
+    void changeRealTimeBlending(bool en);
+
 protected:
     virtual void keyPressEvent(QKeyEvent *event) override;
 

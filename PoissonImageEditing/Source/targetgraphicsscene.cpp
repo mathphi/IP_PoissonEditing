@@ -116,6 +116,21 @@ void TargetGraphicsScene::removeAllSrcItem() {
     }
 }
 
+
+/**
+ * @brief TargetGraphicsScene::changeRealTimeBlending
+ * @param en
+ *
+ * This slot enables/disables the real time blending for
+ * all pasted source items.
+ */
+void TargetGraphicsScene::changeRealTimeBlending(bool en) {
+    // Set the real time blending status for all pasted items
+    foreach (PastedSourceItem *item, m_source_item_list) {
+        item->setRealTime(en);
+    }
+}
+
 /**
  * @brief TargetGraphicsScene::keyPressEvent
  * @param event

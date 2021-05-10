@@ -11,9 +11,9 @@ ComputationHandler::ComputationHandler(QObject *parent) : QObject(parent)
     m_thread_pool = new QThreadPool(this);
 }
 
-void ComputationHandler::startSourceTransferJob(TransferComputationUnit *tcu) {
-    // Add this transfer computation unit to the thread pool queue
-    m_thread_pool->start(tcu);
+void ComputationHandler::startComputationJob(QRunnable *cu) {
+    // Add this computation unit to the thread pool queue
+    m_thread_pool->start(cu);
 }
 
 
