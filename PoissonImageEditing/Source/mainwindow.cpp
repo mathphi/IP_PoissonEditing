@@ -181,6 +181,9 @@ void MainWindow::openSourceImage(QString filename) {
 
     // The lasso can be enabled since we have opened an image
     m_scene_source->enableLasso(true);
+
+    // Enable actions
+    ui->actionSave_project->setEnabled(true);
 }
 
 /**
@@ -241,6 +244,11 @@ void MainWindow::openTargetImage(QString filename) {
     // Update the scene according to the newly opened image
     updateTargetScene();
 
+    // Enable actions
+    ui->actionSave_project->setEnabled(true);
+    ui->actionExport->setEnabled(true);
+    ui->actionExport_as->setEnabled(true);
+
     // Enable transfer button if a lasso is already drawn
     if (m_scene_source->isSelectionValid()) {
         ui->transferButton->setEnabled(true);
@@ -281,6 +289,10 @@ void MainWindow::exportResultAs() {
                 "Export the blending result as...",
                 QDir::homePath(),
                 IMAGE_WRITE_EXT);
+
+    // If the save dialog was canceled
+    if (filename.isEmpty())
+        return;
 
     // Store this file location for future exportations
     m_last_export_filename = filename;
