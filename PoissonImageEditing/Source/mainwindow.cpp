@@ -21,6 +21,8 @@
 #define IMAGE_EXTENSIONS "All Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff);;" \
                          "PNG (*.png);;JPG (*.jpg *.jpeg);;BMP (*.bmp);;TIFF (*.tif *.tiff)"
 
+#define IMAGE_WRITE_EXT "PNG (*.png);;JPG (*.jpg);;BMP (*.bmp);;TIFF (*.tif)"
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -59,6 +61,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->actionOpen_source_image, SIGNAL(triggered(bool)), this, SLOT(openSourceImage()));
     connect(ui->actionOpen_target_image, SIGNAL(triggered(bool)), this, SLOT(openTargetImage()));
+
+    connect(ui->actionExport,       SIGNAL(triggered(bool)), this, SLOT(exportResultDirect()));
+    connect(ui->actionExport_as,    SIGNAL(triggered(bool)), this, SLOT(exportResultAs()));
 
     connect(ui->actionClear_selection,    SIGNAL(triggered(bool)), this, SLOT(clearLassoSelection()));
     connect(ui->actionTransfer_selection, SIGNAL(triggered(bool)), this, SLOT(transferLassoSelection()));
@@ -176,6 +181,24 @@ void MainWindow::openSourceImage(QString filename) {
  * This slot is called when the "Open target image" action is triggered
  */
 void MainWindow::openTargetImage(QString filename) {
+    // First, check if there are pasted layers
+    if (m_scene_target->getSourceItemList().size() > 0) {
+        // If this is the case, ask the user
+        int ans = QMessageBox::warning(
+                    this,
+                    "Target image replacement",
+                    "Replacing the target image will delete the currently pasted layers.\n"
+                    "Are you sure you want to continue?",
+                    QMessageBox::Yes | QMessageBox::No,
+                    QMessageBox::No);
+
+        // If the answer is not yes -> abort
+        if (ans != QMessageBox::Yes)
+            return;
+
+        // If the answer is yes -> replace the target image
+    }
+
     // If no filename was specified -> file dialog
     if (filename.isEmpty()) {
         // Open existing image file
@@ -204,6 +227,9 @@ void MainWindow::openTargetImage(QString filename) {
     // Update the target image
     m_target_image = new_image;
 
+    // Remove the currently pasted layers (if one)
+    m_scene_target->removeAllSrcItem();
+
     // Update the scene according to the newly opened image
     updateTargetScene();
 
@@ -212,6 +238,75 @@ void MainWindow::openTargetImage(QString filename) {
         ui->transferButton->setEnabled(true);
         ui->actionTransfer_selection->setEnabled(true);
     }
+}
+
+/**
+ * @brief MainWindow::exportResultDirect
+ *
+ * This slot exports the result image in the same file path as
+ * the last exported result, without asking or showing a dialog.
+ * If there was no previously exported file, this slot has the
+ * same effect as exportResultAs().
+ */
+void MainWindow::exportResultDirect() {
+    // Check if there is a previous export location
+    if (m_last_export_filename.isEmpty()) {
+        // If there is no previous location -> open file dialog
+        exportResultAs();
+        return;
+    }
+
+    // Export the blending
+    exportBlendingResult(m_last_export_filename);
+}
+
+/**
+ * @brief MainWindow::exportResultAs
+ *
+ * This slot asks for a export file location then exports
+ * the blending result into it.
+ */
+void MainWindow::exportResultAs() {
+    // Ask for export location
+    QString filename = QFileDialog::getSaveFileName(
+                this,
+                "Export the blending result as...",
+                QDir::homePath(),
+                IMAGE_WRITE_EXT);
+
+    // Store this file location for future exportations
+    m_last_export_filename = filename;
+
+    // Export the blending result to this location
+    exportBlendingResult(filename);
+}
+
+/**
+ * @brief MainWindow::exportBlendingResult
+ * @param filename
+ *
+ * This function exports the current blending result into filename.
+ * Any invalid (not yet computed) pasted layer will be ignored
+ */
+void MainWindow::exportBlendingResult(QString filename) {
+    // Create a copy of the target image
+    QImage blended_image = m_target_image;
+
+    // Create a painter device to draw the pasted layers over the background
+    QPainter painter(&blended_image);
+
+    // Loop over each pasted layer
+    foreach (PastedSourceItem *item, m_scene_target->getSourceItemList()) {
+        // Ignore invalid layers
+        if (item->isInvalid() || item->isComputing())
+            continue;
+
+        // Draw the pasted layer's blended image to its position
+        painter.drawImage(item->pos().toPoint(), item->blendedImage());
+    }
+
+    // Export the blended image into a file
+    blended_image.save(filename);
 }
 
 /**

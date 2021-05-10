@@ -130,35 +130,48 @@
    <property name="text">
     <string>Open source image...</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
   </action>
   <action name="actionOpen_target_image">
    <property name="text">
     <string>Open target image...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+T</string>
    </property>
   </action>
   <action name="actionExport_as">
    <property name="text">
     <string>Export as...</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+E</string>
+   </property>
   </action>
   <action name="actionSave_project">
    <property name="text">
     <string>Save project...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="actionExport">
    <property name="text">
     <string>Export</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+E</string>
+   </property>
   </action>
   <action name="actionQuit">
    <property name="text">
     <string>Exit</string>
    </property>
-  </action>
-  <action name="actionTemp_Test">
-   <property name="text">
-    <string>Temp Test</string>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
    </property>
   </action>
   <action name="actionDelete_all_layers">
@@ -168,6 +181,9 @@
    <property name="text">
     <string>Delete all pasted layers</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Del</string>
+   </property>
   </action>
   <action name="actionDelete_selected_layer">
    <property name="enabled">
@@ -176,6 +192,9 @@
    <property name="text">
     <string>Delete selected layer</string>
    </property>
+   <property name="shortcut">
+    <string>Del</string>
+   </property>
   </action>
   <action name="actionTransfer_selection">
    <property name="enabled">
@@ -183,6 +202,9 @@
    </property>
    <property name="text">
     <string>Transfer selection</string>
+   </property>
+   <property name="shortcut">
+    <string>Return</string>
    </property>
   </action>
   <action name="actionReal_time_blending">
@@ -195,6 +217,9 @@
    <property name="text">
     <string>Real-time blending</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
+   </property>
   </action>
   <action name="actionMixed_blending">
    <property name="checkable">
@@ -206,6 +231,9 @@
    <property name="text">
     <string>Mixed blending</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+M</string>
+   </property>
   </action>
   <action name="actionRecompute_all_layers">
    <property name="enabled">
@@ -213,6 +241,9 @@
    </property>
    <property name="text">
     <string>Recompute all pasted layers</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F5</string>
    </property>
   </action>
   <action name="actionRecompute_selected_layer">
@@ -222,15 +253,24 @@
    <property name="text">
     <string>Recompute selected layer</string>
    </property>
+   <property name="shortcut">
+    <string>F5</string>
+   </property>
   </action>
   <action name="actionAbout_Qt">
    <property name="text">
     <string>About Qt...</string>
    </property>
+   <property name="shortcut">
+    <string>F11</string>
+   </property>
   </action>
   <action name="actionAbout">
    <property name="text">
     <string>About...</string>
+   </property>
+   <property name="shortcut">
+    <string>F12</string>
    </property>
   </action>
   <action name="actionClear_selection">
@@ -239,6 +279,9 @@
    </property>
    <property name="text">
     <string>Clear selection</string>
+   </property>
+   <property name="shortcut">
+    <string>Esc</string>
    </property>
   </action>
  </widget>

@@ -25,9 +25,12 @@ public:
     ~MainWindow();
 
 private slots:
+    // I/O handling slots
     void openSourceImage(QString filename = QString());
     void openTargetImage(QString filename = QString());
 
+    void exportResultDirect();
+    void exportResultAs();
 
     // Help action slots
     void aboutQtDialog();
@@ -50,6 +53,8 @@ private slots:
     void askRemoveAllLayers();
 
 private:
+    void exportBlendingResult(QString filename);
+
     Ui::MainWindow *ui;
 
     SourceGraphicsScene *m_scene_source;
@@ -62,5 +67,7 @@ private:
     QImage m_target_image;
 
     ComputationHandler *m_computation_handler;
+
+    QString m_last_export_filename;
 };
 #endif // MAINWINDOW_H

@@ -65,6 +65,7 @@ PastedSourceItem::PastedSourceItem(
     // Initialize status attributes
     m_is_moving = false;
     m_is_computing = false;
+    m_is_invalid = true;
 
     // This item accepts mouse hover events
     setAcceptHoverEvents(true);
@@ -341,12 +342,24 @@ void PastedSourceItem::updateItemControls() {
 }
 
 /**
+ * @brief PastedSourceItem::isInvalid
+ *
+ * This function returns true if the current blending is invalid
+ */
+bool PastedSourceItem::isInvalid() {
+    return m_is_invalid;
+}
+
+/**
  * @brief PastedSourceItem::invalidateBlending
  *
  * This function invalidates the blended image.
  * This will switch the shown image to the original masked one.
  */
 void PastedSourceItem::invalidateBlending() {
+    // Mark this item as invalid
+    m_is_invalid = true;
+
     // Restore the original image on the pixmap
     m_pixmap = QPixmap::fromImage(m_orig_image_masked);
 }
@@ -373,6 +386,9 @@ void PastedSourceItem::setComputing(bool en) {
     // Start/stop the waiting animation
     if (en) {
         m_prop_anim_wait->start();
+
+        // Mark this item as invalid
+        m_is_invalid = true;
     }
     else {
         m_prop_anim_wait->stop();
@@ -556,6 +572,9 @@ void PastedSourceItem::blendingFinished() {
 
         // Exit the computing state
         setComputing(false);
+
+        // The result is now valid
+        m_is_invalid = false;
     }
 
     // Delete the computation unit
@@ -593,6 +612,9 @@ void PastedSourceItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
 
     if (isMoving()) {
         m_is_moving = false;
+
+        // Align the position to the pixel grid
+        setPos(pos().toPoint());
 
         // If real time is enabled -> start blending when item released
         if (m_is_real_time) {

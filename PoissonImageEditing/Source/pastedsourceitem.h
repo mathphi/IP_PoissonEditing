@@ -43,6 +43,8 @@ public:
     bool isMoving();
     void setSelected(bool s);
     void updateItemControls();
+
+    bool isInvalid();
     void invalidateBlending();
 
     bool isComputing();
@@ -108,6 +110,7 @@ private:
     // Status attributes
     bool m_is_moving;
     bool m_is_computing;
+    bool m_is_invalid;
 
     // Blending attributes
     bool m_is_real_time;
