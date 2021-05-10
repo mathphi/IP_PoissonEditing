@@ -66,9 +66,6 @@ protected:
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
 
-    virtual void focusInEvent(QFocusEvent *focusEvent) override;
-    virtual void focusOutEvent(QFocusEvent *focusEvent) override;
-
     virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 
 private slots:

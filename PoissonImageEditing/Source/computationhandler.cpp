@@ -50,6 +50,42 @@ ImageMatricesRGB ComputationHandler::imageToMatrices(QImage img) {
 }
 
 /**
+ * @brief ComputationHandler::imageToChannelMatrix
+ * @param img
+ * @param channel
+ * @return
+ *
+ * This function converts an image's color channel to a matrix
+ */
+MatrixXd ComputationHandler::imageToChannelMatrix(QImage img, int channel) {
+    QColor color;
+
+    // Initialize the 3 channels matrices
+    MatrixXd img_rgb_ch(img.height(), img.width());
+
+    // Loop across the image rows
+    for (int y = 0 ; y < img.height() ; y++) {
+        // Loop across the pixels in the row
+        for (int x = 0 ; x < img.width() ; x++) {
+            color = img.pixel(x,y);
+
+            // Put the needed color channel
+            if (channel == 0) {
+                img_rgb_ch(y,x) = color.redF();
+            }
+            else if (channel == 1) {
+                img_rgb_ch(y,x) = color.greenF();
+            }
+            else {
+                img_rgb_ch(y,x) = color.blueF();
+            }
+        }
+    }
+
+    return img_rgb_ch;
+}
+
+/**
  * @brief ComputationHandler::matricesToImage
  * @param im_rgb
  * @return

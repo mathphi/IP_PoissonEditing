@@ -89,11 +89,11 @@ PastedSourceItem::PastedSourceItem(
     // Create the wait animation property animator
     m_wait_anim_color = Qt::white;
     m_prop_anim_wait = new QPropertyAnimation(this, "waitAnimColor", this);
-    m_prop_anim_wait->setStartValue(QColor(Qt::transparent));
+    m_prop_anim_wait->setStartValue(QColor(150, 190, 255));
     m_prop_anim_wait->setKeyValueAt(0.25, QColor(Qt::white));
-    m_prop_anim_wait->setKeyValueAt(0.50, QColor(150, 190, 255));
-    m_prop_anim_wait->setKeyValueAt(0.25, QColor(Qt::white));
-    m_prop_anim_wait->setEndValue(QColor(Qt::transparent));
+    m_prop_anim_wait->setKeyValueAt(0.50, QColor(Qt::transparent));
+    m_prop_anim_wait->setKeyValueAt(0.75, QColor(Qt::white));
+    m_prop_anim_wait->setEndValue(QColor(150, 190, 255));
     m_prop_anim_wait->setEasingCurve(QEasingCurve::InOutSine);
     m_prop_anim_wait->setDuration(2000);
     m_prop_anim_wait->setLoopCount(-1);     // Infinite repetitions
@@ -156,6 +156,10 @@ QPainterPath PastedSourceItem::shape() const {
 void PastedSourceItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *) {
     // Get the scene scale
     qreal scene_scale = painter->deviceTransform().m11() / painter->device()->devicePixelRatioF();
+
+    // Smooth pixmap transformations
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
 
     if (!isComputing()) {
         // Draw the pixmap
@@ -605,20 +609,6 @@ void PastedSourceItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) {
 
     // Start blending is double clicked
     startBlendingComputation();
-}
-
-void PastedSourceItem::focusInEvent(QFocusEvent *focusEvent) {
-    QGraphicsItem::focusInEvent(focusEvent);
-}
-
-void PastedSourceItem::focusOutEvent(QFocusEvent *focusEvent) {
-    QGraphicsItem::focusOutEvent(focusEvent);
-
-    // Unselect the item when it looses the focus
-    setSelected(false);
-
-    // Update item controls
-    updateItemControls();
 }
 
 QVariant PastedSourceItem::itemChange(GraphicsItemChange change, const QVariant &value) {
