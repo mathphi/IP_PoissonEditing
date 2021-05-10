@@ -28,6 +28,14 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    // Create status bar and add it to MainWindow
+    m_status_bar = new QStatusBar(this);
+    this->setStatusBar(m_status_bar);
+
+    // Create a label to display selection rect size
+    m_label_size = new QLabel();
+    m_status_bar->addPermanentWidget(m_label_size);
+
     // Create the computation handler
     m_computation_handler = new ComputationHandler(this);
 
@@ -254,6 +262,10 @@ void MainWindow::sourceLassoDrawn(QPainterPath path) {
         ui->transferButton->setEnabled(true);
         ui->actionTransfer_selection->setEnabled(true);
     }
+    QRect select_rect = m_scene_source->getSelectionPath().boundingRect().toAlignedRect();
+    QString string_size = QString::number(select_rect.width())+
+                          " x "+QString::number(select_rect.height())+"px";
+    m_label_size->setText(string_size);
 }
 
 /**
@@ -264,6 +276,7 @@ void MainWindow::sourceLassoDrawn(QPainterPath path) {
 void MainWindow::sourceLassoRemoved() {
     ui->transferButton->setEnabled(false);
     ui->actionTransfer_selection->setEnabled(false);
+    m_label_size->clear();
 }
 
 /**

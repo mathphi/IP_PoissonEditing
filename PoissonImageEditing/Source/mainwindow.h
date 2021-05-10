@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QPainterPath>
+#include <QLabel>
 
 class QGraphicsScene;
 class QGraphicsPixmapItem;
@@ -51,6 +52,9 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+
+    QStatusBar *m_status_bar;
+    QLabel     *m_label_size;
 
     SourceGraphicsScene *m_scene_source;
     TargetGraphicsScene *m_scene_target;
