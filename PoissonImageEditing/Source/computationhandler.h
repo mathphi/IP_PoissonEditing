@@ -41,21 +41,18 @@ public:
 
     void startComputationJob(QRunnable *cu);
 
-
     static ImageMatricesRGB imageToMatrices(QImage img);
     static QImage matricesToImage(ImageMatricesRGB im_rgb);
     static QImage matricesToImage(ImageMatricesRGB im_rgb, MatrixXd alpha_mask);
+    static MatrixXd vectorToMatrixImage(VectorXd img_vect, QSize img_size);
+
     static SelectMaskMatrices selectionToMask(QPainterPath selection_path);
 
     static SparseMatrixXd laplacianMatrix(const QSize img_size, SelectMaskMatrices masks);
 
     static VectorXd computeImageGradient(MatrixXd img_ch, SelectMaskMatrices masks);
-
+    static VectorXd computeImageGradientMixed(MatrixXd img_ch, VectorXd other_grad, SelectMaskMatrices masks);
     static VectorXd computeBoundaryNeighbors(MatrixXd tgt_img_ch, SelectMaskMatrices masks);
-
-    static MatrixXd vectorToMatrixImage(VectorXd img_vect, QSize img_size);
-
-signals:
 
 private:
     QThreadPool *m_thread_pool;

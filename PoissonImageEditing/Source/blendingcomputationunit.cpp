@@ -38,8 +38,19 @@ void BlendingComputationUnit::computeBlendingData() {
     // Compute the boundary conditions with the target image
     VectorXd bound = ComputationHandler::computeBoundaryNeighbors(tgt_matrices[m_channel_num], m_masks);
 
+    // Gradient vector
+    VectorXd grad;
+
+    // If mixed blending -> also compute the target gradient then mix them
+    if (m_mixed_blending) {
+        grad = ComputationHandler::computeImageGradientMixed(tgt_matrices[m_channel_num], m_src_grad, m_masks);
+    }
+    else {
+        grad = m_src_grad;
+    }
+
     // Compute the independent terms vector (b vector in linear problem Ax=b)
-    VectorXd b = m_src_grad + bound;
+    VectorXd b = grad + bound;
 
     // Initialise the solver and factorize the laplacian (A matrix)
     Eigen::ConjugateGradient<Eigen::SparseMatrix<float>> solver;

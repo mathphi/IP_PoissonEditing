@@ -235,6 +235,62 @@ VectorXd ComputationHandler::computeImageGradient(MatrixXd img_ch, SelectMaskMat
 }
 
 /**
+ * @brief ComputationHandler::computeImageGradientMixed
+ * @param img_ch
+ * @param other_grad
+ * @param masks
+ * @return
+ *
+ * This function computes the gradient of img_ch and returns a vector containing the largest gradient between
+ * the two gradient vectors in absolute value.
+ */
+VectorXd ComputationHandler::computeImageGradientMixed(MatrixXd img_ch, VectorXd other_grad, SelectMaskMatrices masks) {
+    // Size of the image (remove the 1px margin)
+    const uint32_t inner_width = img_ch.cols() - 2;
+    const uint32_t inner_height = img_ch.rows() - 2;
+
+    // Column vector length
+    const uint32_t N = inner_width*inner_height;
+    VectorXd grad_vect(N);
+
+    // Initialize the vector to 0
+    grad_vect.setZero();
+
+    // Temporary variable
+    uint32_t idx = 0;
+    float cmp_grad;
+
+    // For each pixel p∈Ω -> compute the numerical gradient
+    for (uint32_t y = 1 ; y < inner_height+1 ; y++) {
+        for (uint32_t x = 1 ; x < inner_width+1 ; x++) {
+            // Check if this pixel is in the mask
+            if (masks.positive_mask(y,x) == 0)
+                continue;
+
+            // Compute the vector index
+            idx = (y-1)*inner_width + (x-1);
+
+            // Compute gradient: v_{pq} = 4*p - sum(N_p)
+            cmp_grad =
+                    4.0 * img_ch(y,x)
+                    - img_ch(y,x+1) - img_ch(y,x-1)     // Vertical neighbors
+                    - img_ch(y+1,x) - img_ch(y-1,x);    // Horizontal neighbors
+
+            // Compare gradients in absolute value
+            if (qAbs(cmp_grad) > qAbs(other_grad(idx))) {
+                grad_vect(idx) = cmp_grad;
+            }
+            else {
+                grad_vect(idx) = other_grad(idx);
+            }
+
+        }
+    }
+
+    return grad_vect;
+}
+
+/**
  * @brief ComputationHandler::computeBoundaryNeighbors
  * @param tgt_img_ch
  * @param masks
