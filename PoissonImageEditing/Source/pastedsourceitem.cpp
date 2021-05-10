@@ -337,6 +337,17 @@ void PastedSourceItem::updateItemControls() {
 }
 
 /**
+ * @brief PastedSourceItem::invalidateBlending
+ *
+ * This function invalidates the blended image.
+ * This will switch the shown image to the original masked one.
+ */
+void PastedSourceItem::invalidateBlending() {
+    // Restore the original image on the pixmap
+    m_pixmap = QPixmap::fromImage(m_orig_image_masked);
+}
+
+/**
  * @brief PastedSourceItem::isComputing
  * @return
  *
@@ -543,6 +554,9 @@ void PastedSourceItem::blendingFinished() {
         setComputing(false);
     }
 
+    // Delete the computation unit
+    delete bcu;
+
     // Unlock this section
     m_blending_mutex.unlock();
 }
@@ -563,8 +577,8 @@ void PastedSourceItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
     if (!isMoving() && isSelected() && flags() & QGraphicsItem::ItemIsMovable) {
         m_is_moving = true;
 
-        // Restore the original image on the pixmap
-        m_pixmap = QPixmap::fromImage(m_orig_image_masked);
+        // Mark the computed blending as invalid
+        invalidateBlending();
     }
 }
 

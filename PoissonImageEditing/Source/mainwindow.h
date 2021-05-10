@@ -28,8 +28,6 @@ private slots:
     void openSourceImage(QString filename = QString());
     void openTargetImage(QString filename = QString());
 
-    void tempTestAction();
-
 
     // Help action slots
     void aboutQtDialog();
@@ -42,11 +40,13 @@ private slots:
     void updateSourceScene();
     void sourceLassoDrawn(QPainterPath path);
     void sourceLassoRemoved();
+    void clearLassoSelection();
 
     // Target scene related slots
     void updateTargetScene();
     void targetSceneKeyPressed(QKeyEvent *event);
     void targetSceneSelectionChanged();
+    void pastedItemListChanged();
     void askRemoveAllLayers();
 
 private:

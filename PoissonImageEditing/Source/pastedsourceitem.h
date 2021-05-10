@@ -43,6 +43,7 @@ public:
     bool isMoving();
     void setSelected(bool s);
     void updateItemControls();
+    void invalidateBlending();
 
     bool isComputing();
     void setComputing(bool en);

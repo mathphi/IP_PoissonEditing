@@ -80,8 +80,7 @@
     <property name="title">
      <string>Edit</string>
     </property>
-    <addaction name="actionTemp_Test"/>
-    <addaction name="separator"/>
+    <addaction name="actionClear_selection"/>
     <addaction name="actionTransfer_selection"/>
     <addaction name="separator"/>
     <addaction name="actionDelete_selected_layer"/>
@@ -232,6 +231,14 @@
   <action name="actionAbout">
    <property name="text">
     <string>About...</string>
+   </property>
+  </action>
+  <action name="actionClear_selection">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Clear selection</string>
    </property>
   </action>
  </widget>

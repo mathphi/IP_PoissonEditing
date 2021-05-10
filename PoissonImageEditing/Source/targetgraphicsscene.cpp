@@ -56,6 +56,9 @@ void TargetGraphicsScene::addSourceItem(PastedSourceItem *src_item) {
     clearSelection();
     src_item->setSelected(true);
     src_item->setFocus();
+
+    // Emit the sourceItemListChanged() signal
+    emit sourceItemListChanged();
 }
 
 /**
@@ -99,6 +102,9 @@ void TargetGraphicsScene::removeSelectedSrcItem() {
             delete psi;
         }
     }
+
+    // Emit the sourceItemListChanged() signal
+    emit sourceItemListChanged();
 }
 
 /**
@@ -114,8 +120,45 @@ void TargetGraphicsScene::removeAllSrcItem() {
         removeItem(item);
         delete item;
     }
+
+    // Emit the sourceItemListChanged() signal
+    emit sourceItemListChanged();
 }
 
+/**
+ * @brief TargetGraphicsScene::recomputeBlendingSelected
+ *
+ * This slot informs the selected item to recompute its blending
+ */
+void TargetGraphicsScene::recomputeBlendingSelected() {
+    // Get the list of the selected items
+    QList<QGraphicsItem*> selected_list = selectedItems();
+
+    // Check if one of the selected items is a PastedSourceItem
+    foreach (QGraphicsItem *item, selected_list) {
+        // Try to cast the item as a PastedSourceItem
+        PastedSourceItem *psi = dynamic_cast<PastedSourceItem*>(item);
+
+        // If the cast was successful -> this is a PastedSourceItem
+        if (psi) {
+            // Inform the item to recompute its blending
+            psi->startBlendingComputation();
+        }
+    }
+}
+
+/**
+ * @brief TargetGraphicsScene::recomputeBlendingAll
+ *
+ * This slot informs all the items to recompute its blending
+ */
+void TargetGraphicsScene::recomputeBlendingAll() {
+    // Inform all items that are in the list
+    foreach (PastedSourceItem *item, m_source_item_list) {
+        // Inform the item to recompute its blending
+        item->startBlendingComputation();
+    }
+}
 
 /**
  * @brief TargetGraphicsScene::changeRealTimeBlending
