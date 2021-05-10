@@ -23,6 +23,7 @@ public slots:
     void removeAllSrcItem();
 
     void changeRealTimeBlending(bool en);
+    void changeMixedBlending(bool en);
 
 protected:
     virtual void keyPressEvent(QKeyEvent *event) override;

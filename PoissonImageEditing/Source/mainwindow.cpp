@@ -67,6 +67,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->transferButton,           SIGNAL(clicked()),       this, SLOT(transferLassoSelection()));
 
     connect(ui->actionReal_time_blending, SIGNAL(toggled(bool)), m_scene_target, SLOT(changeRealTimeBlending(bool)));
+    connect(ui->actionMixed_blending,     SIGNAL(toggled(bool)), m_scene_target, SLOT(changeMixedBlending(bool)));
 
     connect(ui->actionAbout_Qt, SIGNAL(triggered(bool)), this, SLOT(aboutQtDialog()));
     connect(ui->actionAbout,    SIGNAL(triggered(bool)), this, SLOT(aboutProgramDialog()));

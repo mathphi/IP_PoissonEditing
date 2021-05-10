@@ -132,6 +132,20 @@ void TargetGraphicsScene::changeRealTimeBlending(bool en) {
 }
 
 /**
+ * @brief TargetGraphicsScene::changeMixedBlending
+ * @param en
+ *
+ * This slot enables/disables the mixed blending for
+ * all pasted source items.
+ */
+void TargetGraphicsScene::changeMixedBlending(bool en) {
+    // Enable the mixed blending for all pasted items
+    foreach (PastedSourceItem *item, m_source_item_list) {
+        item->setMixedBlending(en);
+    }
+}
+
+/**
  * @brief TargetGraphicsScene::keyPressEvent
  * @param event
  *
