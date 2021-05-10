@@ -37,7 +37,7 @@ class ComputationHandler : public QObject
 public:
     explicit ComputationHandler(QObject *parent = nullptr);
 
-    TransferComputationUnit *startSourceTransferJob(PastedSourceItem *origin);
+    void startSourceTransferJob(TransferComputationUnit *tcu);
 
 
     static ImageMatricesRGB imageToMatrices(QImage img);

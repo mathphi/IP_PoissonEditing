@@ -2,27 +2,30 @@
 #include "computationhandler.h"
 #include "pastedsourceitem.h"
 
-TransferComputationUnit::TransferComputationUnit(PastedSourceItem *origin)
+TransferComputationUnit::TransferComputationUnit(QImage source_image, QPainterPath selection_path)
+    : QObject(), QRunnable()
 {
-    m_origin = origin;
+    m_source_image = source_image;
+    m_selection_path = selection_path;
 }
 
 void TransferComputationUnit::run() {
+    // Emit started signal
+    emit computationStarted();
+
+    // Compute...
     computeTransferData();
+
+    // Emit finished signal
+    emit computationFinished();
 }
 
 void TransferComputationUnit::computeTransferData() {
-    // Inform the origin that computation started
-    m_origin->setComputing(true);
-
-    QImage source_image = m_origin->originalImage();
-    QPainterPath select_path = m_origin->getSelectionPath();
-
     // Convert the image into RGB matrices
-    ImageMatricesRGB img_mat = ComputationHandler::imageToMatrices(source_image);
+    ImageMatricesRGB img_mat = ComputationHandler::imageToMatrices(m_source_image);
 
     // Compute the selection masks
-    SelectMaskMatrices smm = ComputationHandler::selectionToMask(select_path);
+    SelectMaskMatrices smm = ComputationHandler::selectionToMask(m_selection_path);
 
     // Compute the masked original image
     ImageMatricesRGB masked_src_img;
@@ -36,7 +39,7 @@ void TransferComputationUnit::computeTransferData() {
 
     // Compute the Laplacian matrix
     // Remove 2px (1px margin top/bottom; right/left)
-    SparseMatrixXd laplacian_mat = ComputationHandler::laplacianMatrix(source_image.size() - QSize(2,2), smm);
+    SparseMatrixXd laplacian_mat = ComputationHandler::laplacianMatrix(m_source_image.size() - QSize(2,2), smm);
 
     // Compute the source image gradient vectors
     ImageVectorRGB grad_vectors;
@@ -45,14 +48,31 @@ void TransferComputationUnit::computeTransferData() {
     grad_vectors[2] = ComputationHandler::computeImageGradient(img_mat[2], smm);
 
 
-    // Send computed results to the origin
-    m_origin->setOriginalMatrices(img_mat);
-    m_origin->setMasks(smm);
-    m_origin->setOriginalImageMasked(masked_img);
-    m_origin->setLaplacianMatrix(laplacian_mat);
-    m_origin->setGradientVectors(grad_vectors);
+    // Save computed results
+    m_original_matrices     = img_mat;
+    m_masks                 = smm;
+    m_original_image_masked = masked_img;
+    m_laplacian             = laplacian_mat;
+    m_gradient_vectors      = grad_vectors;
+}
 
 
-    // Inform the origin that computation is done
-    m_origin->transferFinished();
+ImageMatricesRGB TransferComputationUnit::getOriginalMatrices() {
+    return m_original_matrices;
+}
+
+SelectMaskMatrices TransferComputationUnit::getMasks() {
+    return m_masks;
+}
+
+QImage TransferComputationUnit::getOriginalImageMasked() {
+    return m_original_image_masked;
+}
+
+SparseMatrixXd TransferComputationUnit::getLaplacian() {
+    return m_laplacian;
+}
+
+ImageVectorRGB TransferComputationUnit::getGradientVectors() {
+    return m_gradient_vectors;
 }

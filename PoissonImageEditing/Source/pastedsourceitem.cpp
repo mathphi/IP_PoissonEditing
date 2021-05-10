@@ -79,9 +79,11 @@ PastedSourceItem::PastedSourceItem(QImage src_img,
     // Create the wait animation property animator
     m_wait_anim_color = Qt::white;
     m_prop_anim_wait = new QPropertyAnimation(this, "waitAnimColor", this);
-    m_prop_anim_wait->setStartValue(QColor(Qt::white));
-    m_prop_anim_wait->setKeyValueAt(0.5, QColor(150, 190, 255));
-    m_prop_anim_wait->setEndValue(QColor(Qt::white));
+    m_prop_anim_wait->setStartValue(QColor(Qt::transparent));
+    m_prop_anim_wait->setKeyValueAt(0.25, QColor(Qt::white));
+    m_prop_anim_wait->setKeyValueAt(0.50, QColor(150, 190, 255));
+    m_prop_anim_wait->setKeyValueAt(0.25, QColor(Qt::white));
+    m_prop_anim_wait->setEndValue(QColor(Qt::transparent));
     m_prop_anim_wait->setEasingCurve(QEasingCurve::InOutSine);
     m_prop_anim_wait->setDuration(2000);
     m_prop_anim_wait->setLoopCount(-1);     // Infinite repetitions
@@ -92,8 +94,15 @@ PastedSourceItem::PastedSourceItem(QImage src_img,
     // Switch in computing mode
     setComputing(true);
 
+    // Create and configure the transfer computation unit
+    m_transfer_job = new TransferComputationUnit(m_orig_image, m_selection_path);
+    m_transfer_job->setAutoDelete(false);
+
+    // Connect the transfer job signal
+    connect(m_transfer_job, SIGNAL(computationFinished()), this, SLOT(transferFinished()));
+
     // Send the transfer job to the computation handler
-    m_transfer_job = m_computation_hander->startSourceTransferJob(this);
+    m_computation_hander->startSourceTransferJob(m_transfer_job);
 }
 
 PastedSourceItem::~PastedSourceItem() {
@@ -210,21 +219,6 @@ QImage PastedSourceItem::originalImage() {
     return m_orig_image;
 }
 
-
-QImage PastedSourceItem::originalImageMasked() {
-    return m_orig_image_masked;
-}
-
-void PastedSourceItem::setOriginalImageMasked(QImage img) {
-    m_orig_image_masked = img;
-
-    // Set the diplayed image to this one
-    m_pixmap = QPixmap::fromImage(img);
-
-    // Update the item painter
-    update();
-}
-
 /**
  * @brief PastedSourceItem::originalMatrices
  * @return
@@ -233,10 +227,6 @@ void PastedSourceItem::setOriginalImageMasked(QImage img) {
  */
 ImageMatricesRGB PastedSourceItem::originalMatrices() {
     return m_orig_matrices;
-}
-
-void PastedSourceItem::setOriginalMatrices(ImageMatricesRGB img_mat) {
-    m_orig_matrices = img_mat;
 }
 
 /**
@@ -249,16 +239,6 @@ QImage PastedSourceItem::blendedImage() {
     return m_blended_image;
 }
 
-void PastedSourceItem::setBlendedImage(QImage img) {
-    m_blended_image = img;
-
-    // Set the displayed pixmap to this one
-    m_pixmap = QPixmap::fromImage(img);
-
-    // Update the item painter
-    update();
-}
-
 /**
  * @brief PastedSourceItem::masks
  * @return
@@ -267,10 +247,6 @@ void PastedSourceItem::setBlendedImage(QImage img) {
  */
 SelectMaskMatrices PastedSourceItem::masks() {
     return m_masks;
-}
-
-void PastedSourceItem::setMasks(SelectMaskMatrices masks) {
-    m_masks = masks;
 }
 
 /**
@@ -283,17 +259,16 @@ SparseMatrixXd PastedSourceItem::laplacianMatrix() {
     return m_laplacian_matrix;
 }
 
-void PastedSourceItem::setLaplacianMatrix(SparseMatrixXd lapl) {
-    m_laplacian_matrix = lapl;
-}
-
+/**
+ * @brief PastedSourceItem::gradientVectors
+ * @return
+ *
+ * This function returns the gradient vectors
+ */
 ImageVectorRGB PastedSourceItem::gradientVectors() {
     return m_gradient_vectors;
 }
 
-void PastedSourceItem::setGradientVectors(ImageVectorRGB grad_vects) {
-    m_gradient_vectors = grad_vects;
-}
 
 /**
  * @brief PastedSourceItem::isMoving
@@ -383,10 +358,6 @@ void PastedSourceItem::setComputing(bool en) {
     update();
 }
 
-void PastedSourceItem::transferFinished() {
-    setComputing(false);
-}
-
 /**
  * @brief PastedSourceItem::waitAnimColor
  * @return
@@ -409,6 +380,31 @@ void PastedSourceItem::setWaitAnimColor(QColor color) {
 
     // Update the graphics
     update();
+}
+
+/**
+ * @brief PastedSourceItem::transferFinished
+ *
+ * This slot is called when the Transfer job thread finished computing
+ * the transfer parameters
+ */
+void PastedSourceItem::transferFinished() {
+    // Retreive the computation results
+    m_orig_matrices     = m_transfer_job->getOriginalMatrices();
+    m_masks             = m_transfer_job->getMasks();
+    m_orig_image_masked = m_transfer_job->getOriginalImageMasked();
+    m_laplacian_matrix  = m_transfer_job->getLaplacian();
+    m_gradient_vectors  = m_transfer_job->getGradientVectors();
+
+    // Update the current pixmap with the original masked image
+    m_pixmap = QPixmap::fromImage(m_orig_image_masked);
+
+    // Delete the computation unit
+    delete m_transfer_job;
+    m_transfer_job = nullptr;
+
+    // Set computing as finished
+    setComputing(false);
 }
 
 
@@ -447,13 +443,6 @@ void PastedSourceItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
 
     // Update item controls (enable moving)
     updateItemControls();
-}
-
-//FIXME: this function is here to test the 'computing' state
-void PastedSourceItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) {
-    Q_UNUSED(event);
-
-    setComputing(!isComputing());
 }
 
 void PastedSourceItem::focusInEvent(QFocusEvent *focusEvent) {

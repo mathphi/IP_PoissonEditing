@@ -29,24 +29,13 @@ public:
 
     // Image data manipulation function
     QImage originalImage();
-
     QImage originalImageMasked();
-    void setOriginalImageMasked(QImage img);
+    QImage blendedImage();
 
     ImageMatricesRGB originalMatrices();
-    void setOriginalMatrices(ImageMatricesRGB img_mat);
-
-    QImage blendedImage();
-    void setBlendedImage(QImage img);
-
     SelectMaskMatrices masks();
-    void setMasks(SelectMaskMatrices masks);
-
     SparseMatrixXd laplacianMatrix();
-    void setLaplacianMatrix(SparseMatrixXd lapl);
-
     ImageVectorRGB gradientVectors();
-    void setGradientVectors(ImageVectorRGB grad_vects);
 
     // Item control functions
     bool isMoving();
@@ -56,14 +45,13 @@ public:
     bool isComputing();
     void setComputing(bool en);
 
+public slots:
     void transferFinished();
 
 protected:
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     virtual void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
-
-    virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
 
     virtual void focusInEvent(QFocusEvent *focusEvent) override;
     virtual void focusOutEvent(QFocusEvent *focusEvent) override;
