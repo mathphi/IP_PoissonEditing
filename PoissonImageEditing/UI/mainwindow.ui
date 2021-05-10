@@ -60,7 +60,7 @@
      <x>0</x>
      <y>0</y>
      <width>733</width>
-     <height>26</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -125,8 +125,21 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionOpen_source_image"/>
+   <addaction name="actionOpen_target_image"/>
+   <addaction name="actionSave_project"/>
+   <addaction name="actionExport_as"/>
+   <addaction name="separator"/>
+   <addaction name="actionReal_time_blending"/>
+   <addaction name="actionMixed_blending"/>
+   <addaction name="separator"/>
+   <addaction name="actionRecompute_selected_layer"/>
   </widget>
   <action name="actionOpen_source_image">
+   <property name="icon">
+    <iconset resource="../Resources/resources.qrc">
+     <normaloff>:/icons/image-edit.png</normaloff>:/icons/image-edit.png</iconset>
+   </property>
    <property name="text">
     <string>Open source image...</string>
    </property>
@@ -135,6 +148,10 @@
    </property>
   </action>
   <action name="actionOpen_target_image">
+   <property name="icon">
+    <iconset resource="../Resources/resources.qrc">
+     <normaloff>:/icons/landscape.png</normaloff>:/icons/landscape.png</iconset>
+   </property>
    <property name="text">
     <string>Open target image...</string>
    </property>
@@ -143,14 +160,22 @@
    </property>
   </action>
   <action name="actionExport_as">
+   <property name="icon">
+    <iconset resource="../Resources/resources.qrc">
+     <normaloff>:/icons/export.png</normaloff>:/icons/export.png</iconset>
+   </property>
    <property name="text">
     <string>Export as...</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Shift+E</string>
+    <string>Ctrl+E</string>
    </property>
   </action>
   <action name="actionSave_project">
+   <property name="icon">
+    <iconset resource="../Resources/resources.qrc">
+     <normaloff>:/icons/save_black.png</normaloff>:/icons/save_black.png</iconset>
+   </property>
    <property name="text">
     <string>Save project...</string>
    </property>
@@ -214,6 +239,10 @@
    <property name="checked">
     <bool>true</bool>
    </property>
+   <property name="icon">
+    <iconset resource="../Resources/resources.qrc">
+     <normaloff>:/icons/time.png</normaloff>:/icons/time.png</iconset>
+   </property>
    <property name="text">
     <string>Real-time blending</string>
    </property>
@@ -227,6 +256,10 @@
    </property>
    <property name="checked">
     <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../Resources/resources.qrc">
+     <normaloff>:/icons/mix.png</normaloff>:/icons/mix.png</iconset>
    </property>
    <property name="text">
     <string>Mixed blending</string>
@@ -249,6 +282,10 @@
   <action name="actionRecompute_selected_layer">
    <property name="enabled">
     <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../Resources/resources.qrc">
+     <normaloff>:/icons/play-fill.png</normaloff>:/icons/play-fill.png</iconset>
    </property>
    <property name="text">
     <string>Recompute selected layer</string>

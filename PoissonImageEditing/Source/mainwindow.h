@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QPainterPath>
+#include <QLabel>
 
 class QGraphicsScene;
 class QGraphicsPixmapItem;
@@ -56,6 +57,9 @@ private:
     void exportBlendingResult(QString filename);
 
     Ui::MainWindow *ui;
+
+    QStatusBar *m_status_bar;
+    QLabel     *m_label_size;
 
     SourceGraphicsScene *m_scene_source;
     TargetGraphicsScene *m_scene_target;

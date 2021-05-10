@@ -1,6 +1,17 @@
 <RCC>
     <qresource prefix="/icons">
         <file>Painting.ico</file>
+        <file>play-fill.png</file>
+        <file>save.png</file>
+        <file>save_black.png</file>
+        <file>time.png</file>
+        <file>mix.png</file>
+        <file>image1.png</file>
+        <file>image2.png</file>
+        <file>image-add.png</file>
+        <file>image-edit.png</file>
+        <file>landscape.png</file>
+        <file>export.png</file>
     </qresource>
     <qresource prefix="/images">
         <file>go-next.svg</file>
