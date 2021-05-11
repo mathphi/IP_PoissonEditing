@@ -36,7 +36,7 @@ QList<PastedSourceItem*> TargetGraphicsScene::getSourceItemList() {
  * This function adds a source item on the center of the target scene and
  * marks it as selected and gives it the focus.
  */
-void TargetGraphicsScene::addSourceItem(PastedSourceItem *src_item) {
+void TargetGraphicsScene::addSourceItem(PastedSourceItem *src_item, bool place_center) {
     // Check if the size of the pasted source item is larger than the scene rect
     if (!sceneRect().contains(src_item->boundingRect())) {
         return;
@@ -48,10 +48,11 @@ void TargetGraphicsScene::addSourceItem(PastedSourceItem *src_item) {
     // Add the item to the scene
     addItem(src_item);
 
-    // Place the item on the center of the target
-    src_item->setPos(QPointF(sceneRect().width()/2 - src_item->boundingRect().width()/2,
-                             sceneRect().height()/2 - src_item->boundingRect().height()/2));
-
+    if (place_center) {
+        // Place the item on the center of the target
+        src_item->setPos(QPointF(sceneRect().width()/2 - src_item->boundingRect().width()/2,
+                                 sceneRect().height()/2 - src_item->boundingRect().height()/2));
+    }
     // Set the new item as selected (only this one)
     clearSelection();
     src_item->setSelected(true);
@@ -197,3 +198,4 @@ void TargetGraphicsScene::changeMixedBlending(bool en) {
 void TargetGraphicsScene::keyPressEvent(QKeyEvent *event) {
     emit keyPressed(event);
 }
+

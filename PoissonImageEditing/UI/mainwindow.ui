@@ -69,6 +69,8 @@
     </property>
     <addaction name="actionOpen_source_image"/>
     <addaction name="actionOpen_target_image"/>
+    <addaction name="separator"/>
+    <addaction name="actionOpen_project"/>
     <addaction name="actionSave_project"/>
     <addaction name="separator"/>
     <addaction name="actionExport"/>
@@ -144,7 +146,7 @@
     <string>Open source image...</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+O</string>
+    <string>Ctrl+G</string>
    </property>
   </action>
   <action name="actionOpen_target_image">
@@ -328,6 +330,14 @@
    </property>
    <property name="shortcut">
     <string>Esc</string>
+   </property>
+  </action>
+  <action name="actionOpen_project">
+   <property name="text">
+    <string>Open project...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
    </property>
   </action>
  </widget>

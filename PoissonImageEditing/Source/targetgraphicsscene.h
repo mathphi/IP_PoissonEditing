@@ -14,7 +14,7 @@ public:
     ~TargetGraphicsScene();
 
     QList<PastedSourceItem*> getSourceItemList();
-    void addSourceItem(PastedSourceItem *src_item);
+    void addSourceItem(PastedSourceItem *src_item, bool place_center = true);
 
     bool isRectangleInsertable(QRectF rect);
 

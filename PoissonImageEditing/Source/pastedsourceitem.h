@@ -18,7 +18,7 @@ public:
     PastedSourceItem(QImage src_img,
                      QPainterPath selection_path,
                      QImage target_image,
-                     ComputationHandler *ch_ptr,
+                     bool compute_transfer_data = true,
                      QGraphicsItem *parent = nullptr);
     ~PastedSourceItem();
 
@@ -123,8 +123,11 @@ private:
     QList<BlendingComputationUnit*> m_blending_unit_list;
     QMutex m_blending_mutex;
 
-    // Pointer to the computation handler
-    ComputationHandler *m_computation_hander;
+
+    // Operator overloaded to write objects from this class into a files
+    friend QDataStream &operator>>(QDataStream &in, PastedSourceItem *&o);
+    friend QDataStream &operator<<(QDataStream &out, PastedSourceItem *o);
 };
+
 
 #endif // PASTEDSOURCEITEM_H

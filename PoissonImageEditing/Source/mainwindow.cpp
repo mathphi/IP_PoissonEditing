@@ -15,13 +15,11 @@
 #include <QMessageBox>
 #include <QKeyEvent>
 
-#include <QThread>
-#include <QDebug>
-
-#define IMAGE_EXTENSIONS "All Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff);;" \
-                         "PNG (*.png);;JPG (*.jpg *.jpeg);;BMP (*.bmp);;TIFF (*.tif *.tiff)"
-
-#define IMAGE_WRITE_EXT "PNG (*.png);;JPG (*.jpg);;BMP (*.bmp);;TIFF (*.tif)"
+#define PROGRAM_SIGNATURE   "PIB-ELECY412"
+#define PROJECT_FILE_EXT    "Poisson Image Blending Project (*.pibproj)"
+#define IMAGE_EXTENSIONS    "All Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff);;" \
+                            "PNG (*.png);;JPG (*.jpg *.jpeg);;BMP (*.bmp);;TIFF (*.tif *.tiff)"
+#define IMAGE_WRITE_EXT     "PNG (*.png);;JPG (*.jpg);;BMP (*.bmp);;TIFF (*.tif)"
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -38,8 +36,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_label_size = new QLabel();
     m_status_bar->addPermanentWidget(m_label_size);
 
-    // Create the computation handler
-    m_computation_handler = new ComputationHandler(this);
+    // Initialize the computation handler
+    ComputationHandler::initializeComputationHandler(this);
 
     // Create graphics scenes
     m_scene_source = new SourceGraphicsScene(this);
@@ -69,6 +67,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->actionOpen_source_image, SIGNAL(triggered(bool)), this, SLOT(openSourceImage()));
     connect(ui->actionOpen_target_image, SIGNAL(triggered(bool)), this, SLOT(openTargetImage()));
+
+    connect(ui->actionOpen_project, SIGNAL(triggered(bool)), this, SLOT(openProject()));
+    connect(ui->actionSave_project, SIGNAL(triggered(bool)), this, SLOT(saveProject()));
 
     connect(ui->actionExport,       SIGNAL(triggered(bool)), this, SLOT(exportResultDirect()));
     connect(ui->actionExport_as,    SIGNAL(triggered(bool)), this, SLOT(exportResultAs()));
@@ -179,11 +180,8 @@ void MainWindow::openSourceImage(QString filename) {
     // Remove the current lasso (if any)
     m_scene_source->removeLasso();
 
-    // The lasso can be enabled since we have opened an image
-    m_scene_source->enableLasso(true);
-
-    // Enable actions
-    ui->actionSave_project->setEnabled(true);
+    // Update UI
+    updateUiComponents();
 }
 
 /**
@@ -244,16 +242,177 @@ void MainWindow::openTargetImage(QString filename) {
     // Update the scene according to the newly opened image
     updateTargetScene();
 
-    // Enable actions
-    ui->actionSave_project->setEnabled(true);
-    ui->actionExport->setEnabled(true);
-    ui->actionExport_as->setEnabled(true);
+    // Update UI
+    updateUiComponents();
+}
 
-    // Enable transfer button if a lasso is already drawn
-    if (m_scene_source->isSelectionValid()) {
-        ui->transferButton->setEnabled(true);
-        ui->actionTransfer_selection->setEnabled(true);
+/**
+ * @brief MainWindow::openProject
+ *
+ * This slot opens a file dialog to select a project file from
+ * which extract the project's data.
+ */
+void MainWindow::openProject() {
+    // Open existing image file
+    QString filename = QFileDialog::getOpenFileName(
+                this,
+                "Open a source image",
+                QDir::homePath(),
+                PROJECT_FILE_EXT);
+
+    // If dialog was closed
+    if (filename.isEmpty())
+        return;
+
+    // Check if file exists and is readable
+    if (!QFile::exists(filename)) {
+        QMessageBox::critical(
+                    this,
+                    "File opening error",
+                    "The selected file does not exist");
+        return;
     }
+
+    // Extract the project's data
+    openProjectDataFile(filename);
+
+    // Update some UI state
+    updateUiComponents();
+}
+
+/**
+ * @brief MainWindow::saveProject
+ *
+ * This slot opens a save file dialog and write the project's data
+ * into the selected file.
+ */
+void MainWindow::saveProject() {
+    // Ask for export location
+    QString filename = QFileDialog::getSaveFileName(
+                this,
+                "Save the project as...",
+                QDir::homePath(),
+                PROJECT_FILE_EXT);
+
+    // If the file dialog was canceled
+    if (filename.isEmpty())
+        return;
+
+    // Write project's data into the selected file
+    saveProjectDataToFile(filename);
+}
+
+/**
+ * @brief MainWindow::openProjectDataFile
+ * @param filename
+ *
+ * This function extracts the project's data from the given file.
+ */
+void MainWindow::openProjectDataFile(QString filename) {
+    // Handle the file name
+    QFile in_f(filename);
+
+    // Open the file in read only mode
+    if (!in_f.open(QIODevice::ReadOnly)) {
+        QMessageBox::critical(
+                    this,
+                    "Project file opening error",
+                    "Unable to open the project file");
+        return;
+    }
+
+    // Stream the data file
+    QDataStream in(&in_f);
+
+    // ----- Signature ----- //
+    QString signature;
+    in >> signature;
+
+    if (signature != PROGRAM_SIGNATURE) {
+        QMessageBox::critical(
+                    this,
+                    "Project file opening error",
+                    "The file you are trying to open appears not to be a compatible project file.");
+        return;
+    }
+
+    // ----- Base images ----- //
+    // Source and target images
+    in >> m_source_image;
+    in >> m_target_image;
+
+    // Update the source and target with the new images
+    updateSourceScene();
+    updateTargetScene();
+
+    // Remove the current lasso (if one)
+    m_scene_source->removeLasso();
+
+    // ----- Pasted items ----- //
+    // New list of pasted source items
+    QList<PastedSourceItem*> psi_lst;
+    in >> psi_lst;
+
+    // Remove all current pasted source item
+    m_scene_target->removeAllSrcItem();
+
+    // Add the new items to the scene
+    foreach (PastedSourceItem *item, psi_lst) {
+        m_scene_target->addSourceItem(item, false);
+    }
+
+    // ----- Blending settings ----- //
+    bool is_mixed, is_realtime;
+    in >> is_mixed;
+    in >> is_realtime;
+
+    ui->actionMixed_blending->setChecked(is_mixed);
+    ui->actionReal_time_blending->setChecked(is_realtime);
+
+    m_scene_target->changeMixedBlending(is_mixed);
+    m_scene_target->changeRealTimeBlending(is_realtime);
+
+    // Recovering from file done !
+}
+
+/**
+ * @brief MainWindow::saveProjectDataToFile
+ * @param filename
+ *
+ * This function writes the project's data into the given file.
+ */
+void MainWindow::saveProjectDataToFile(QString filename) {
+    // Handle the file name
+    QFile out_f(filename);
+
+    // Open the file in write only mode
+    if (!out_f.open(QIODevice::WriteOnly)) {
+        QMessageBox::critical(
+                    this,
+                    "Project file opening error",
+                    "Unable to open the destination project file");
+        return;
+    }
+
+    // Stream the data file
+    QDataStream out(&out_f);
+
+    // ----- Signature ----- //
+    QString signature = PROGRAM_SIGNATURE;
+    out << signature;
+
+    // ----- Base images ----- //
+    // Source and target images
+    out << m_source_image;
+    out << m_target_image;
+
+    // ----- Pasted items ----- //
+    // Store the list of pasted source items
+    out << m_scene_target->getSourceItemList();
+
+    // ----- Blending settings ----- //
+    out << ui->actionMixed_blending->isChecked();
+    out << ui->actionReal_time_blending->isChecked();
 }
 
 /**
@@ -326,7 +485,14 @@ void MainWindow::exportBlendingResult(QString filename) {
     }
 
     // Export the blended image into a file
-    blended_image.save(filename);
+    if (!blended_image.save(filename)) {
+        // An error occurred
+        QMessageBox::critical(
+                    this,
+                    "Blending exportation error",
+                    "An error occurred while writing the blended image to the selected file.");
+        return;
+    }
 }
 
 /**
@@ -340,6 +506,9 @@ void MainWindow::updateSourceScene() {
 
     // Set the scene rect to the source image rect
     m_scene_source->setSceneRect(0, 0, m_source_image.width(), m_source_image.height());
+
+    // Enable lasso only if the source image is present
+    m_scene_source->enableLasso(!m_source_image.isNull());
 }
 
 /**
@@ -367,15 +536,10 @@ void MainWindow::updateTargetScene() {
 void MainWindow::sourceLassoDrawn(QPainterPath path) {
     Q_UNUSED(path);
 
-    ui->actionClear_selection->setEnabled(true);
+    updateUiComponents();
 
-    if (!m_target_image.isNull()) {
-        ui->transferButton->setEnabled(true);
-        ui->actionTransfer_selection->setEnabled(true);
-    }
     QRect select_rect = m_scene_source->getSelectionPath().boundingRect().toAlignedRect();
-    QString string_size = QString::number(select_rect.width())+
-                          " x "+QString::number(select_rect.height())+"px";
+    QString string_size = QString("Selection: %1x%2 px").arg(select_rect.width()).arg(select_rect.height());
     m_label_size->setText(string_size);
 }
 
@@ -385,9 +549,7 @@ void MainWindow::sourceLassoDrawn(QPainterPath path) {
  * This slot is called when a lasso has been removed from the source scene
  */
 void MainWindow::sourceLassoRemoved() {
-    ui->transferButton->setEnabled(false);
-    ui->actionTransfer_selection->setEnabled(false);
-    ui->actionClear_selection->setEnabled(false);
+    updateUiComponents();
     m_label_size->clear();
 }
 
@@ -492,6 +654,23 @@ void MainWindow::askRemoveAllLayers() {
     }
 }
 
+
+/**
+ * @brief MainWindow::updateUiComponents
+ *
+ * This slot updates the UI components state (enabled/disabled,...)
+ */
+void MainWindow::updateUiComponents() {
+    ui->actionSave_project->setEnabled(!m_source_image.isNull() || !m_target_image.isNull());
+    ui->actionExport->setEnabled(!m_target_image.isNull());
+    ui->actionExport_as->setEnabled(!m_target_image.isNull());
+
+    bool lasso_valid = m_scene_source->isSelectionValid();
+    ui->actionClear_selection->setEnabled(lasso_valid);
+    ui->transferButton->setEnabled(!m_target_image.isNull() && lasso_valid);
+    ui->actionTransfer_selection->setEnabled(!m_target_image.isNull() && lasso_valid);
+}
+
 /**
  * @brief MainWindow::transferLassoSelection
  *
@@ -530,7 +709,7 @@ void MainWindow::transferLassoSelection() {
     QPainterPath path = m_scene_source->getSelectionPath();
 
     // Create the Pasted Source Item
-    PastedSourceItem *src_item = new PastedSourceItem(src_img_part, path, m_target_image, m_computation_handler);
+    PastedSourceItem *src_item = new PastedSourceItem(src_img_part, path, m_target_image);
     src_item->setRealTime(ui->actionReal_time_blending->isChecked());
     src_item->setMixedBlending(ui->actionMixed_blending->isChecked());
 

@@ -32,14 +32,11 @@ class PastedSourceItem;
 class TransferComputationUnit;
 class BlendingComputationUnit;
 
-class ComputationHandler : public QObject
+class ComputationHandler
 {
-    Q_OBJECT
-
 public:
-    explicit ComputationHandler(QObject *parent = nullptr);
-
-    void startComputationJob(QRunnable *cu);
+    static void initializeComputationHandler(QObject *parent = nullptr);
+    static bool startComputationJob(QRunnable *cu);
 
     static ImageMatricesRGB imageToMatrices(QImage img);
     static MatrixXd imageToChannelMatrix(QImage img, int channel);
@@ -54,9 +51,45 @@ public:
     static VectorXd computeImageGradient(MatrixXd img_ch, SelectMaskMatrices masks);
     static VectorXd computeImageGradientMixed(MatrixXd img_ch, VectorXd other_grad, SelectMaskMatrices masks);
     static VectorXd computeBoundaryNeighbors(MatrixXd tgt_img_ch, SelectMaskMatrices masks);
-
-private:
-    QThreadPool *m_thread_pool;
 };
+
+
+/*
+ * Types serialization functions definition
+ */
+
+// Standard array serialization
+template <typename T, std::size_t N>
+inline QDataStream &operator>>(QDataStream &in, std::array<T, N> &p) {
+    for (std::size_t i = 0 ; i < p.size() ; i++) {
+        in >> p[i];
+    }
+    return in;
+}
+
+template <typename T, std::size_t N>
+inline QDataStream &operator<<(QDataStream &out, std::array<T, N> &p) {
+    for (std::size_t i = 0 ; i < p.size() ; i++) {
+        out << p[i];
+    }
+    return out;
+}
+
+// Eigen matrix serialization
+QDataStream &operator>>(QDataStream &in, MatrixXd &p);
+QDataStream &operator<<(QDataStream &out, MatrixXd &p);
+
+// Eigen vector serialization
+QDataStream &operator>>(QDataStream &in, VectorXd &p);
+QDataStream &operator<<(QDataStream &out, VectorXd &p);
+
+// Eigen sparse matrix serialization
+QDataStream &operator>>(QDataStream &in, SparseMatrixXd &p);
+QDataStream &operator<<(QDataStream &out, SparseMatrixXd &p);
+
+// SelectMaskMatrices serialization
+QDataStream &operator>>(QDataStream &in, SelectMaskMatrices &p);
+QDataStream &operator<<(QDataStream &out, SelectMaskMatrices &p);
+
 
 #endif // COMPUTATIONHANDLER_H

@@ -30,6 +30,9 @@ private slots:
     void openSourceImage(QString filename = QString());
     void openTargetImage(QString filename = QString());
 
+    void openProject();
+    void saveProject();
+
     void exportResultDirect();
     void exportResultAs();
 
@@ -53,7 +56,12 @@ private slots:
     void pastedItemListChanged();
     void askRemoveAllLayers();
 
+    // UI component
+    void updateUiComponents();
+
 private:
+    void openProjectDataFile(QString filename);
+    void saveProjectDataToFile(QString filename);
     void exportBlendingResult(QString filename);
 
     Ui::MainWindow *ui;
@@ -69,8 +77,6 @@ private:
 
     QImage m_source_image;
     QImage m_target_image;
-
-    ComputationHandler *m_computation_handler;
 
     QString m_last_export_filename;
 };

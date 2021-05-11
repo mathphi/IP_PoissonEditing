@@ -42,6 +42,7 @@ void BlendingComputationUnit::computeBlendingData() {
 
     // If mixed blending -> also compute the target gradient then mix them
     if (m_mixed_blending) {
+        //FIXME: This is actually wrong. See equation (13) in reference paper [Perez]
         grad = ComputationHandler::computeImageGradientMixed(tgt_matrix_ch, m_src_grad, m_masks);
     }
     else {

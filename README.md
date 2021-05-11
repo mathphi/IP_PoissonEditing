@@ -19,5 +19,3 @@ Image composition (collage) with Poisson blending.
 - PPPW, "Poisson Image Editing", https://github.com/PPPW/poisson-image-editing
 - R.-C. Cocioban, "Poisson Image Editing", https://github.com/ralucacocioban/PoissonImageEditing
 - W. Emmanuel, "Poisson Image Editing", https://github.com/willemmanuel/poisson-image-editing
-- C. Tralie, "Poisson Image Editing", http://www.ctralie.com/Teaching/PoissonImageEditing/
-- M. Sairamkolla, "Poison Image Blending", https://github.com/sairamkolla/poison_image_blending

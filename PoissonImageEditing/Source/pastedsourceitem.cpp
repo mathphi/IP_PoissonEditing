@@ -23,7 +23,7 @@ PastedSourceItem::PastedSourceItem(
         QImage src_img,
         QPainterPath selection_path,
         QImage target_image,
-        ComputationHandler *ch_ptr,
+        bool compute_transfer_data,
         QGraphicsItem *parent)
     : QGraphicsObject(parent)
 {
@@ -31,8 +31,7 @@ PastedSourceItem::PastedSourceItem(
     m_is_real_time = true;
     m_is_mixed_blending = true;
 
-    // Save the pointer to the computation handler
-    m_computation_hander = ch_ptr;
+    // Initialize the transfer job to nullptr
     m_transfer_job = nullptr;
 
     // Save the link to target image
@@ -101,18 +100,20 @@ PastedSourceItem::PastedSourceItem(
 
     connect(m_anim_timer, SIGNAL(timeout()), this, SLOT(animateContour()));
 
+    // Compute transfer data if needed
+    if (compute_transfer_data) {
+        // Switch in computing mode
+        setComputing(true);
 
-    // Switch in computing mode
-    setComputing(true);
+        // Create and configure the transfer computation unit
+        m_transfer_job = new TransferComputationUnit(m_orig_image, m_selection_path);
 
-    // Create and configure the transfer computation unit
-    m_transfer_job = new TransferComputationUnit(m_orig_image, m_selection_path);
+        // Connect the transfer job signal
+        connect(m_transfer_job, SIGNAL(computationFinished()), this, SLOT(transferFinished()));
 
-    // Connect the transfer job signal
-    connect(m_transfer_job, SIGNAL(computationFinished()), this, SLOT(transferFinished()));
-
-    // Send the transfer job to the computation handler
-    m_computation_hander->startComputationJob(m_transfer_job);
+        // Send the transfer job to the computation handler
+        ComputationHandler::startComputationJob(m_transfer_job);
+    }
 }
 
 PastedSourceItem::~PastedSourceItem() {
@@ -503,7 +504,7 @@ void PastedSourceItem::startBlendingComputation() {
         m_blending_mutex.unlock();
 
         //Add the computation unit to the thread pool queue
-        m_computation_hander->startComputationJob(bcu);
+        ComputationHandler::startComputationJob(bcu);
     }
 }
 
@@ -654,4 +655,75 @@ QVariant PastedSourceItem::itemChange(GraphicsItemChange change, const QVariant 
     }
 
     return QGraphicsItem::itemChange(change, new_value);
+}
+
+
+/*
+ * Class serialization function
+ */
+
+QDataStream &operator>>(QDataStream &in, PastedSourceItem *&o) {
+    QPointF pos;
+    QImage src_img, tgt_img;
+    QPainterPath sel_path;
+    bool is_invalid, is_selected;
+
+    in >> pos;
+    in >> src_img;
+    in >> tgt_img;
+    in >> sel_path;
+
+    // Initialize the object (don't compute transfer data)
+    o = new PastedSourceItem(src_img, sel_path, tgt_img, false);
+    o->setPos(pos);
+
+    in >> o->m_orig_image_masked;
+    in >> o->m_orig_matrices;
+    in >> o->m_blended_image;
+    in >> o->m_masks;
+    in >> o->m_laplacian_matrix;
+
+    in >> o->m_gradient_vectors;
+
+    in >> o->m_is_real_time;
+    in >> o->m_is_mixed_blending;
+
+    in >> is_invalid;
+    if (is_invalid) {
+        o->invalidateBlending();
+    }
+    else {
+        o->m_is_invalid = false;
+        o->m_pixmap = QPixmap::fromImage(o->m_blended_image);
+    }
+
+    o->updateItemControls();
+
+    in >> is_selected;
+    o->setSelected(is_selected);
+
+    return in;
+}
+
+QDataStream &operator<<(QDataStream &out, PastedSourceItem *o) {
+    out << o->pos();
+    out << o->m_orig_image;
+    out << o->m_target_image;
+    out << o->m_selection_path;
+
+    out << o->m_orig_image_masked;
+    out << o->m_orig_matrices;
+    out << o->m_blended_image;
+    out << o->m_masks;
+    out << o->m_laplacian_matrix;
+
+    out << o->m_gradient_vectors;
+
+    out << o->m_is_real_time;
+    out << o->m_is_mixed_blending;
+
+    out << o->m_is_invalid;
+    out << o->isSelected();
+
+    return out;
 }

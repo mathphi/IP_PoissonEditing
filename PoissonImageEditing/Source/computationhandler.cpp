@@ -6,14 +6,38 @@
 #include <QThreadPool>
 
 
-ComputationHandler::ComputationHandler(QObject *parent) : QObject(parent)
-{
-    m_thread_pool = new QThreadPool(this);
+// Static thread pool used by the computation handler
+static QThreadPool *g_thread_pool = nullptr;
+
+
+/**
+ * @brief ComputationHandler::initializeComputationHandler
+ * @param parent
+ *
+ * This function initializes the computation handler's thread pool.
+ * If a parent argument is defined, it is used as parent for the QThreadPool.
+ */
+void ComputationHandler::initializeComputationHandler(QObject *parent) {
+    g_thread_pool = new QThreadPool(parent);
 }
 
-void ComputationHandler::startComputationJob(QRunnable *cu) {
+/**
+ * @brief ComputationHandler::startComputationJob
+ * @param cu
+ * @return
+ *
+ * This function adds the runnable object to the shared thread pool queue.
+ * It returns false if the operation fails (thread pool not initialized).
+ */
+bool ComputationHandler::startComputationJob(QRunnable *cu) {
+    // If the thread pool is not initialized
+    if (!g_thread_pool)
+        return false;
+
     // Add this computation unit to the thread pool queue
-    m_thread_pool->start(cu);
+    g_thread_pool->start(cu);
+
+    return true;
 }
 
 
@@ -387,3 +411,112 @@ MatrixXd ComputationHandler::vectorToMatrixImage(VectorXd img_vect, QSize img_si
 
     return img_mat;
 }
+
+
+
+/*
+ * Types serialization functions declaration
+ */
+
+// Eigen matrix serialization
+QDataStream &operator>>(QDataStream &in, MatrixXd &p) {
+    Eigen::Index rows;
+    Eigen::Index cols;
+
+    in >> rows;
+    in >> cols;
+
+    p.resize(rows, cols);
+    in.readRawData((char*)p.data(), rows*cols*sizeof(float));
+
+    return in;
+}
+
+QDataStream &operator<<(QDataStream &out, MatrixXd &p) {
+    out << (Eigen::Index)p.rows();
+    out << (Eigen::Index)p.cols();
+
+    out.writeRawData((char*)p.data(), p.rows()*p.cols()*sizeof(float));
+
+    return out;
+}
+
+// Eigen vector serialization
+QDataStream &operator>>(QDataStream &in, VectorXd &p) {
+    Eigen::Index rows;
+    Eigen::Index cols;
+
+    in >> rows;
+    in >> cols;
+
+    p.resize(rows, cols);
+    in.readRawData((char*)p.data(), rows*cols*sizeof(float));
+
+    return in;
+}
+
+QDataStream &operator<<(QDataStream &out, VectorXd &p) {
+    out << (Eigen::Index)p.rows();
+    out << (Eigen::Index)p.cols();
+
+    out.writeRawData((char*)p.data(), p.rows()*p.cols()*sizeof(float));
+
+    return out;
+}
+
+// Eigen sparse matrix serialization
+QDataStream &operator>>(QDataStream &in, SparseMatrixXd &p) {
+    Eigen::Index rows, cols, nnz, inSz, outSz;
+    in >> rows;
+    in >> cols;
+    in >> nnz;
+    in >> outSz;
+    in >> inSz;
+
+    p.resize(rows, cols);
+    p.makeCompressed();
+    p.resizeNonZeros(nnz);
+
+    in.readRawData((char*)(p.valuePtr()), nnz * sizeof(float));
+    in.readRawData((char*)(p.outerIndexPtr()), outSz * sizeof(SparseMatrixXd::StorageIndex));
+    in.readRawData((char*)(p.innerIndexPtr()), nnz * sizeof(SparseMatrixXd::StorageIndex));
+
+    p.finalize();
+
+    return in;
+}
+
+QDataStream &operator<<(QDataStream &out, SparseMatrixXd &p) {
+    // Compress sparse matrix
+    p.makeCompressed();
+
+    // Size of the vectors composing the sparse matrix
+    out << (Eigen::Index) p.rows();
+    out << (Eigen::Index) p.cols();
+    out << (Eigen::Index) p.nonZeros();
+    out << (Eigen::Index) p.outerSize();
+    out << (Eigen::Index) p.innerSize();
+
+    // Sparse matrix data
+    out.writeRawData((char*)(p.valuePtr()), p.nonZeros() * sizeof(float));
+    out.writeRawData((char*)(p.outerIndexPtr()), p.outerSize() * sizeof(SparseMatrixXd::StorageIndex));
+    out.writeRawData((char*)(p.innerIndexPtr()), p.nonZeros() * sizeof(SparseMatrixXd::StorageIndex));
+
+    return out;
+}
+
+// SelectMaskMatrices serialization
+QDataStream &operator>>(QDataStream &in, SelectMaskMatrices &p) {
+    in >> p.positive_mask;
+    in >> p.negative_mask;
+
+    return in;
+}
+
+QDataStream &operator<<(QDataStream &out, SelectMaskMatrices &p) {
+    out << p.positive_mask;
+    out << p.negative_mask;
+
+    return out;
+}
+
