@@ -14,7 +14,7 @@
    <string>Poisson Image Blending</string>
   </property>
   <property name="windowIcon">
-   <iconset>
+   <iconset resource="../Resources/resources.qrc">
     <normaloff>:/icons/Painting.ico</normaloff>:/icons/Painting.ico</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -44,7 +44,7 @@
        <string/>
       </property>
       <property name="icon">
-       <iconset>
+       <iconset resource="../Resources/resources.qrc">
         <normaloff>:/images/go-next.svg</normaloff>:/images/go-next.svg</iconset>
       </property>
      </widget>
@@ -129,17 +129,21 @@
    </attribute>
    <addaction name="actionOpen_source_image"/>
    <addaction name="actionOpen_target_image"/>
+   <addaction name="separator"/>
    <addaction name="actionSave_project"/>
    <addaction name="actionExport_as"/>
+   <addaction name="separator"/>
+   <addaction name="actionDelete_selected_layer"/>
    <addaction name="separator"/>
    <addaction name="actionReal_time_blending"/>
    <addaction name="actionMixed_blending"/>
    <addaction name="separator"/>
    <addaction name="actionRecompute_selected_layer"/>
+   <addaction name="actionRecompute_all_layers"/>
   </widget>
   <action name="actionOpen_source_image">
    <property name="icon">
-    <iconset>
+    <iconset resource="../Resources/resources.qrc">
      <normaloff>:/icons/image-edit.png</normaloff>:/icons/image-edit.png</iconset>
    </property>
    <property name="text">
@@ -151,7 +155,7 @@
   </action>
   <action name="actionOpen_target_image">
    <property name="icon">
-    <iconset>
+    <iconset resource="../Resources/resources.qrc">
      <normaloff>:/icons/landscape.png</normaloff>:/icons/landscape.png</iconset>
    </property>
    <property name="text">
@@ -166,7 +170,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset>
+    <iconset resource="../Resources/resources.qrc">
      <normaloff>:/icons/export.png</normaloff>:/icons/export.png</iconset>
    </property>
    <property name="text">
@@ -181,7 +185,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset>
+    <iconset resource="../Resources/resources.qrc">
      <normaloff>:/icons/save_black.png</normaloff>:/icons/save_black.png</iconset>
    </property>
    <property name="text">
@@ -225,6 +229,10 @@
    <property name="enabled">
     <bool>false</bool>
    </property>
+   <property name="icon">
+    <iconset resource="../Resources/resources.qrc">
+     <normaloff>:/icons/trash.png</normaloff>:/icons/trash.png</iconset>
+   </property>
    <property name="text">
     <string>Delete selected layer</string>
    </property>
@@ -251,7 +259,7 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset>
+    <iconset resource="../Resources/resources.qrc">
      <normaloff>:/icons/time.png</normaloff>:/icons/time.png</iconset>
    </property>
    <property name="text">
@@ -269,7 +277,7 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset>
+    <iconset resource="../Resources/resources.qrc">
      <normaloff>:/icons/mix.png</normaloff>:/icons/mix.png</iconset>
    </property>
    <property name="text">
@@ -283,6 +291,10 @@
    <property name="enabled">
     <bool>false</bool>
    </property>
+   <property name="icon">
+    <iconset resource="../Resources/resources.qrc">
+     <normaloff>:/icons/play-all.png</normaloff>:/icons/play-all.png</iconset>
+   </property>
    <property name="text">
     <string>Recompute all pasted layers</string>
    </property>
@@ -295,7 +307,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset>
+    <iconset resource="../Resources/resources.qrc">
      <normaloff>:/icons/play-fill.png</normaloff>:/icons/play-fill.png</iconset>
    </property>
    <property name="text">
@@ -348,6 +360,8 @@
    <header>imagegraphicsview.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="../Resources/resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

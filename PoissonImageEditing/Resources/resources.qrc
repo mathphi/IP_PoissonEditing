@@ -12,6 +12,8 @@
         <file>image-edit.png</file>
         <file>landscape.png</file>
         <file>export.png</file>
+        <file>play-all.png</file>
+        <file>trash.png</file>
     </qresource>
     <qresource prefix="/images">
         <file>go-next.svg</file>
