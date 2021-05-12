@@ -37,7 +37,6 @@ public:
     ImageMatricesRGB originalMatrices();
     SelectMaskMatrices masks();
     SparseMatrixXd laplacianMatrix();
-    ImageVectorRGB gradientVectors();
 
     // Item control functions
     bool isMoving();
@@ -91,8 +90,6 @@ private:
 
     SelectMaskMatrices m_masks;
     SparseMatrixXd m_laplacian_matrix;
-
-    ImageVectorRGB m_gradient_vectors;
 
     // Graphics attributes
     QPixmap m_pixmap;

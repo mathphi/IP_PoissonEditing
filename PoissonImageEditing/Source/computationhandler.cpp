@@ -295,19 +295,20 @@ VectorXd ComputationHandler::computeImageGradient(MatrixXd img_ch, SelectMaskMat
 }
 
 /**
- * @brief ComputationHandler::computeImageGradientMixed
- * @param img_ch
- * @param other_grad
+ * @brief ComputationHandler::computeImagesGradientMixed
+ * @param img1_ch
+ * @param img2_ch
  * @param masks
  * @return
  *
- * This function computes the gradient of img_ch and returns a vector containing the largest gradient between
- * the two gradient vectors in absolute value.
+ * This function computes the mixed gradient of img1_ch and img2_ch (as described by equation (13) in
+ * the reference paper [Perez]).
+ * The two images must have the same dimensions.
  */
-VectorXd ComputationHandler::computeImageGradientMixed(MatrixXd img_ch, VectorXd other_grad, SelectMaskMatrices masks) {
+VectorXd ComputationHandler::computeImagesGradientMixed(MatrixXd img1_ch, MatrixXd img2_ch, SelectMaskMatrices masks) {
     // Size of the image (remove the 1px margin)
-    const uint32_t inner_width = img_ch.cols() - 2;
-    const uint32_t inner_height = img_ch.rows() - 2;
+    const uint32_t inner_width = img1_ch.cols() - 2;
+    const uint32_t inner_height = img1_ch.rows() - 2;
 
     // Column vector length
     const uint32_t N = inner_width*inner_height;
@@ -316,9 +317,10 @@ VectorXd ComputationHandler::computeImageGradientMixed(MatrixXd img_ch, VectorXd
     // Initialize the vector to 0
     grad_vect.setZero();
 
-    // Temporary variable
+    // Temporary variables
     uint32_t idx = 0;
-    float cmp_grad;
+    float img1_diff, img2_diff;
+    float img1_neighbors[4], img2_neighbors[4];
 
     // For each pixel p∈Ω -> compute the numerical gradient
     for (uint32_t y = 1 ; y < inner_height+1 ; y++) {
@@ -330,20 +332,34 @@ VectorXd ComputationHandler::computeImageGradientMixed(MatrixXd img_ch, VectorXd
             // Compute the vector index
             idx = (y-1)*inner_width + (x-1);
 
-            // Compute gradient: v_{pq} = 4*p - sum(N_p)
-            cmp_grad =
-                    4.0 * img_ch(y,x)
-                    - img_ch(y,x+1) - img_ch(y,x-1)     // Vertical neighbors
-                    - img_ch(y+1,x) - img_ch(y-1,x);    // Horizontal neighbors
+            // Initialize the sum of gradients (sum of v_pq in reference paper)
+            grad_vect(idx) = 0;
 
-            // Compare gradients in absolute value
-            if (qAbs(cmp_grad) > qAbs(other_grad(idx))) {
-                grad_vect(idx) = cmp_grad;
-            }
-            else {
-                grad_vect(idx) = other_grad(idx);
-            }
+            // Save the 4 neigbors of each image
+            img1_neighbors[0] = img1_ch(y,x+1); // Right
+            img1_neighbors[1] = img1_ch(y,x-1); // Left
+            img1_neighbors[2] = img1_ch(y+1,x); // Bottom
+            img1_neighbors[3] = img1_ch(y-1,x); // Top
 
+            img2_neighbors[0] = img2_ch(y,x+1); // Right
+            img2_neighbors[1] = img2_ch(y,x-1); // Left
+            img2_neighbors[2] = img2_ch(y+1,x); // Bottom
+            img2_neighbors[3] = img2_ch(y-1,x); // Top
+
+            // For each neighbor
+            for (uint32_t n = 0 ; n < 4 ; n++) {
+                // Right neighbors
+                img1_diff = img1_ch(y,x) - img1_neighbors[n];
+                img2_diff = img2_ch(y,x) - img2_neighbors[n];
+
+                // Keep the most important difference in absolute value
+                if (qAbs(img1_diff) > qAbs(img2_diff)) {
+                    grad_vect(idx) += img1_diff;
+                }
+                else {
+                    grad_vect(idx) += img2_diff;
+                }
+            }
         }
     }
 

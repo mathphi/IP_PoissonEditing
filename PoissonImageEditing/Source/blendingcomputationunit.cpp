@@ -3,7 +3,7 @@
 BlendingComputationUnit::BlendingComputationUnit(
         int channel_num,
         QImage target_img,
-        VectorXd src_grad,
+        MatrixXd src_img_ch,
         SelectMaskMatrices masks,
         SparseMatrixXd laplacian,
         bool mixed_blending)
@@ -11,7 +11,7 @@ BlendingComputationUnit::BlendingComputationUnit(
 {
     m_channel_num = channel_num;
     m_target_img = target_img;
-    m_src_grad = src_grad;
+    m_src_img_ch = src_img_ch;
     m_masks = masks;
     m_laplacian = laplacian;
     m_mixed_blending = mixed_blending;
@@ -42,11 +42,10 @@ void BlendingComputationUnit::computeBlendingData() {
 
     // If mixed blending -> also compute the target gradient then mix them
     if (m_mixed_blending) {
-        //FIXME: This is actually wrong. See equation (13) in reference paper [Perez]
-        grad = ComputationHandler::computeImageGradientMixed(tgt_matrix_ch, m_src_grad, m_masks);
+        grad = ComputationHandler::computeImagesGradientMixed(tgt_matrix_ch, m_src_img_ch, m_masks);
     }
     else {
-        grad = m_src_grad;
+        grad = ComputationHandler::computeImageGradient(m_src_img_ch, m_masks);
     }
 
     // Compute the independent terms vector (b vector in linear problem Ax=b)

@@ -22,7 +22,6 @@ public:
     SelectMaskMatrices getMasks();
     QImage getOriginalImageMasked();
     SparseMatrixXd getLaplacian();
-    ImageVectorRGB getGradientVectors();
 
 signals:
     void computationStarted();
@@ -40,7 +39,6 @@ private:
     SelectMaskMatrices m_masks;
     QImage m_original_image_masked;
     SparseMatrixXd m_laplacian;
-    ImageVectorRGB m_gradient_vectors;
 };
 
 #endif // TRANSFERCOMPUTATIONUNIT_H

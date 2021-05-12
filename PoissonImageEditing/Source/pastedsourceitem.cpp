@@ -275,17 +275,6 @@ SparseMatrixXd PastedSourceItem::laplacianMatrix() {
 }
 
 /**
- * @brief PastedSourceItem::gradientVectors
- * @return
- *
- * This function returns the gradient vectors
- */
-ImageVectorRGB PastedSourceItem::gradientVectors() {
-    return m_gradient_vectors;
-}
-
-
-/**
  * @brief PastedSourceItem::isMoving
  * @return
  *
@@ -486,7 +475,7 @@ void PastedSourceItem::startBlendingComputation() {
         BlendingComputationUnit *bcu = new BlendingComputationUnit(
                     i,
                     target_image_part,
-                    m_gradient_vectors[i],
+                    m_orig_matrices[i],
                     m_masks,
                     m_laplacian_matrix,
                     m_is_mixed_blending);
@@ -521,7 +510,6 @@ void PastedSourceItem::transferFinished() {
     m_masks             = m_transfer_job->getMasks();
     m_orig_image_masked = m_transfer_job->getOriginalImageMasked();
     m_laplacian_matrix  = m_transfer_job->getLaplacian();
-    m_gradient_vectors  = m_transfer_job->getGradientVectors();
 
     // Update the current pixmap with the original masked image
     m_pixmap = QPixmap::fromImage(m_orig_image_masked);
@@ -683,8 +671,6 @@ QDataStream &operator>>(QDataStream &in, PastedSourceItem *&o) {
     in >> o->m_masks;
     in >> o->m_laplacian_matrix;
 
-    in >> o->m_gradient_vectors;
-
     in >> o->m_is_real_time;
     in >> o->m_is_mixed_blending;
 
@@ -716,8 +702,6 @@ QDataStream &operator<<(QDataStream &out, PastedSourceItem *o) {
     out << o->m_blended_image;
     out << o->m_masks;
     out << o->m_laplacian_matrix;
-
-    out << o->m_gradient_vectors;
 
     out << o->m_is_real_time;
     out << o->m_is_mixed_blending;

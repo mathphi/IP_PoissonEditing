@@ -43,19 +43,11 @@ void TransferComputationUnit::computeTransferData() {
     // Remove 2px (1px margin top/bottom; right/left)
     SparseMatrixXd laplacian_mat = ComputationHandler::laplacianMatrix(m_source_image.size() - QSize(2,2), smm);
 
-    // Compute the source image gradient vectors
-    ImageVectorRGB grad_vectors;
-    grad_vectors[0] = ComputationHandler::computeImageGradient(img_mat[0], smm);
-    grad_vectors[1] = ComputationHandler::computeImageGradient(img_mat[1], smm);
-    grad_vectors[2] = ComputationHandler::computeImageGradient(img_mat[2], smm);
-
-
     // Save computed results
     m_original_matrices     = img_mat;
     m_masks                 = smm;
     m_original_image_masked = masked_img;
     m_laplacian             = laplacian_mat;
-    m_gradient_vectors      = grad_vectors;
 }
 
 
@@ -73,8 +65,4 @@ QImage TransferComputationUnit::getOriginalImageMasked() {
 
 SparseMatrixXd TransferComputationUnit::getLaplacian() {
     return m_laplacian;
-}
-
-ImageVectorRGB TransferComputationUnit::getGradientVectors() {
-    return m_gradient_vectors;
 }

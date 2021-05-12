@@ -358,7 +358,7 @@ void MainWindow::openProjectDataFile(QString filename) {
 
     // Add the new items to the scene
     foreach (PastedSourceItem *item, psi_lst) {
-        m_scene_target->addSourceItem(item, false);
+        m_scene_target->addSourceItem(item, false, false);
     }
 
     // ----- Blending settings ----- //

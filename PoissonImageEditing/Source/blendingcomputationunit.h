@@ -14,7 +14,7 @@ public:
     BlendingComputationUnit(
             int channel_num,
             QImage target_img,
-            VectorXd src_grad,
+            MatrixXd src_img_ch,
             SelectMaskMatrices masks,
             SparseMatrixXd laplacian,
             bool mixed_blending
@@ -35,7 +35,7 @@ private:
     // Input attributes
     int m_channel_num;
     QImage m_target_img;
-    VectorXd m_src_grad;
+    MatrixXd m_src_img_ch;
     SelectMaskMatrices m_masks;
     SparseMatrixXd m_laplacian;
     bool m_mixed_blending;

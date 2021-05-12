@@ -18,7 +18,6 @@ typedef Eigen::SparseMatrix<float> SparseMatrixXd;
 typedef Eigen::Matrix<float, Eigen::Dynamic, 1> VectorXd;
 
 typedef std::array<MatrixXd,3> ImageMatricesRGB;
-typedef std::array<VectorXd,3> ImageVectorRGB;
 
 struct SelectMaskMatrices {
     MatrixXd positive_mask;
@@ -49,7 +48,7 @@ public:
     static SparseMatrixXd laplacianMatrix(const QSize img_size, SelectMaskMatrices masks);
 
     static VectorXd computeImageGradient(MatrixXd img_ch, SelectMaskMatrices masks);
-    static VectorXd computeImageGradientMixed(MatrixXd img_ch, VectorXd other_grad, SelectMaskMatrices masks);
+    static VectorXd computeImagesGradientMixed(MatrixXd img1_ch, MatrixXd img2_ch, SelectMaskMatrices masks);
     static VectorXd computeBoundaryNeighbors(MatrixXd tgt_img_ch, SelectMaskMatrices masks);
 };
 

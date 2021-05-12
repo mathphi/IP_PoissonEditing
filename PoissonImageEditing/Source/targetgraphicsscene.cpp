@@ -36,7 +36,7 @@ QList<PastedSourceItem*> TargetGraphicsScene::getSourceItemList() {
  * This function adds a source item on the center of the target scene and
  * marks it as selected and gives it the focus.
  */
-void TargetGraphicsScene::addSourceItem(PastedSourceItem *src_item, bool place_center) {
+void TargetGraphicsScene::addSourceItem(PastedSourceItem *src_item, bool place_center, bool select) {
     // Check if the size of the pasted source item is larger than the scene rect
     if (!sceneRect().contains(src_item->boundingRect())) {
         return;
@@ -53,10 +53,13 @@ void TargetGraphicsScene::addSourceItem(PastedSourceItem *src_item, bool place_c
         src_item->setPos(QPointF(sceneRect().width()/2 - src_item->boundingRect().width()/2,
                                  sceneRect().height()/2 - src_item->boundingRect().height()/2));
     }
-    // Set the new item as selected (only this one)
-    clearSelection();
-    src_item->setSelected(true);
-    src_item->setFocus();
+
+    if (select) {
+        // Set the new item as selected (only this one)
+        clearSelection();
+        src_item->setSelected(true);
+        src_item->setFocus();
+    }
 
     // Emit the sourceItemListChanged() signal
     emit sourceItemListChanged();
