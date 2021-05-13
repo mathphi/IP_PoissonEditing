@@ -1,6 +1,9 @@
 # Image Processing Project - Poisson Image Editing
 Image composition (collage) with Poisson blending.
 
+***NOTE: This repository uses the [Eigen](https://gitlab.com/libeigen/eigen "Eigen") project as a submodule. To clone the project with its submodules, use:***
+`git clone --recurse-submodules https://github.com/mathphi/IP_PoissonEditing.git`
+
 #### Description
 - Manually compose pieces from several images
 - Automatically blend these pieces and produce an output image
@@ -11,7 +14,7 @@ Image composition (collage) with Poisson blending.
 
 #### Bonus targets
 - Implement an intuitive GUI that lets users combine images in interesting ways.
-- Explore video editing (only a few frames).
+- ~~Explore video editing (only a few frames)~~
 
 #### References
 - P. Prez, M. Gangnet, and A. Blake, Poisson image editing, ACM Transactions on Graphics
