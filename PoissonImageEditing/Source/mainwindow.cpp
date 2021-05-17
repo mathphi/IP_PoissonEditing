@@ -17,9 +17,9 @@
 
 #define PROGRAM_SIGNATURE   "PIB-ELECY412"
 #define PROJECT_FILE_EXT    "Poisson Image Blending Project (*.pibproj)"
-#define IMAGE_EXTENSIONS    "All Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff);;" \
-                            "PNG (*.png);;JPG (*.jpg *.jpeg);;BMP (*.bmp);;TIFF (*.tif *.tiff)"
-#define IMAGE_WRITE_EXT     "PNG (*.png);;JPG (*.jpg);;BMP (*.bmp);;TIFF (*.tif)"
+#define IMAGE_EXTENSIONS    "All Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff *.gif);;" \
+                            "PNG (*.png);;JPG (*.jpg *.jpeg);;BMP (*.bmp);;TIFF (*.tif *.tiff);;GIF (*.gif)"
+#define IMAGE_WRITE_EXT     "PNG (*.png);;JPG (*.jpg);;BMP (*.bmp);;TIFF (*.tif);;GIF (*.gif)"
 
 
 MainWindow::MainWindow(QWidget *parent)

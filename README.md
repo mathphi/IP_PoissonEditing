@@ -2,6 +2,7 @@
 Image composition (collage) with Poisson blending.
 
 ***NOTE: This repository uses the [Eigen](https://gitlab.com/libeigen/eigen "Eigen") project as a submodule. To clone the project with its submodules, use:***
+
 `git clone --recurse-submodules https://github.com/mathphi/IP_PoissonEditing.git`
 
 #### Description
