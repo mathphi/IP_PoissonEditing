@@ -5,6 +5,8 @@ Image composition (collage) with Poisson blending.
 
 `git clone --recurse-submodules https://github.com/mathphi/IP_PoissonEditing.git`
 
+![Poisson Image Blending - Capture](PoissonImageEditing/PoissonImageBlending-Capture.jpg "Poisson Image Blending - Capture")
+
 #### Description
 - Manually compose pieces from several images
 - Automatically blend these pieces and produce an output image
