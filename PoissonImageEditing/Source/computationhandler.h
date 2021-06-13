@@ -9,6 +9,8 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseCholesky>
 
+#include "array"
+
 
 /*
  * Eigen matrices type definitions

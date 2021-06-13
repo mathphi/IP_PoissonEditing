@@ -434,6 +434,19 @@ MatrixXd ComputationHandler::vectorToMatrixImage(VectorXd img_vect, QSize img_si
  * Types serialization functions declaration
  */
 
+// Eigen index type serialization
+QDataStream &operator>>(QDataStream &in, Eigen::Index &p) {
+    in.readRawData((char*) &p, sizeof(Eigen::Index));
+
+    return in;
+}
+
+QDataStream &operator<<(QDataStream &out, const Eigen::Index &p) {
+    out.writeRawData((char*) &p, sizeof(Eigen::Index));
+
+    return out;
+}
+
 // Eigen matrix serialization
 QDataStream &operator>>(QDataStream &in, MatrixXd &p) {
     Eigen::Index rows;
