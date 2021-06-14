@@ -436,14 +436,15 @@ MatrixXd ComputationHandler::vectorToMatrixImage(VectorXd img_vect, QSize img_si
 
 // Eigen index type serialization
 QDataStream &operator>>(QDataStream &in, Eigen::Index &p) {
-    in.readRawData((char*) &p, sizeof(Eigen::Index));
+    quint64 idx;
+    in >> idx;
+    p = idx;
 
     return in;
 }
 
 QDataStream &operator<<(QDataStream &out, const Eigen::Index &p) {
-    out.writeRawData((char*) &p, sizeof(Eigen::Index));
-
+    out << (quint64) p;
     return out;
 }
 
