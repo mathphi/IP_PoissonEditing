@@ -38,6 +38,7 @@ FORMS += \
 INCLUDEPATH += 3rdparty/eigen Source/
 
 RC_ICONS = Resources/Painting.ico
+ICON = Resources/Painting.icns
 
 # Disable attributes warnings on MSYS/MXE due to gcc bug spamming the logs: Issue #2771
 win* | CONFIG(mingw-cross-env)|CONFIG(mingw-cross-env-shared) {
